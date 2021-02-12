@@ -1,0 +1,26 @@
+{
+  "gisaid": [
+    {
+      "suffix": "all",
+      "fasta": "gisaid",
+      "metadata_fields": ["sequence_name","country","edin_admin_1","edin_admin_2","edin_travel","edin_date_stamp","sample_date","epi_week","lineage","lineages_version","lineage_support","covv_accession_id","covv_virus_name","covv_location","covv_add_host_info","covv_assembly_method","covv_gender","covv_host","covv_passage","covv_patient_age","covv_seq_technology","covv_specimen","covv_subm_date"],
+      "mutations": true,
+      "where": "sample_date=covv_collection_date epi_week=edin_epi_week country=edin_admin_0"
+    },
+    {
+      "suffix": "global",
+      "fasta": "gisaid",
+      "metadata_fields": ["sequence_name","country","edin_admin_1","edin_admin_2","edin_travel","edin_date_stamp","sample_date","epi_week","lineage","lineages_version","lineage_support","covv_accession_id","covv_virus_name","covv_location","covv_add_host_info","covv_assembly_method","covv_gender","covv_host","covv_passage","covv_patient_age","covv_seq_technology","covv_specimen","covv_subm_date"],
+      "mutations": true,
+      "exclude_uk": true,
+      "where": "sample_date=covv_collection_date epi_week=edin_epi_week country=edin_admin_0"
+    },
+    {
+      "suffix": "global_variants",
+      "fasta": "gisaid",
+      "metadata_fields": ["sequence_name"],
+      "mutations": true,
+      "exclude_uk": true
+    }
+  ]
+}

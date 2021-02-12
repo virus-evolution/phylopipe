@@ -1,0 +1,38 @@
+name: grapevine_nextflow
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+  - cov-ert
+dependencies:
+  - biopython=1.74
+  - coreutils=8.25
+  - minimap2=2.17
+  - pip=19.3.1
+  - python=3.7.4
+  - snakemake-minimal
+  - nextflow
+  - r-base=3.5.1
+  - r-networkd3
+  - benjamincjackson::gofasta=v0.0.3
+  - pip:
+      - git+https://github.com/COG-UK/phylo-reports.git
+      - git+https://github.com/cov-lineages/pangolin.git
+      - git+https://github.com/cov-lineages/pangoLEARN.git
+      - git+https://github.com/cov-ert/datafunk.git
+      - git+https://github.com/cov-ert/fastafunk.git
+      - matplotlib==3.2.1
+      - numpy==1.18.1
+      - pweave==0.30.3
+      - scipy==1.4.1
+      - tabulate==0.8.7
+      - pandas==1.0.1
+      - requests==2.20.0
+      - epiweeks==2.1.1
+      - argparse==1.4.0
+      - geopandas==0.7.0
+      - shapely==1.7.0
+      - descartes==1.1.0
+      - joypy==0.2.2
+      - pytools==2020.1
+
