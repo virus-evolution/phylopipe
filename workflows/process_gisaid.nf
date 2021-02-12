@@ -7,8 +7,7 @@ include { preprocess_gisaid } from '../modules/preprocess_gisaid.nf'
 include { pangolin } from '../modules/pangolin.nf'
 include { deduplicate_gisaid } from '../modules/deduplicate_gisaid.nf'
 include { align_and_variant_call } from '../modules/align_and_variant_call.nf'
-include { filter_and_trim } from '../modules/filter_and_trim.nf'
-include { postprocess_gisaid } from '../modules/postprocess_gisaid.nf'
+include { filter_and_trim_gisaid } from '../modules/filter_and_trim_gisaid.nf'
 include { publish_gisaid } from '../modules/publish_gisaid.nf'
 
 workflow process_gisaid {
@@ -20,8 +19,7 @@ workflow process_gisaid {
       deduplicate_gisaid(preprocess_gisaid.out.fasta, pangolin.out.metadata)
       align_and_variant_call(deduplicate_gisaid.out.fasta)
       filter_and_trim(align_and_variant_call.out.fasta, deduplicate_gisaid.out.metadata)
-      postprocess_gisaid(filter_and_trim.out.fasta, filter_and_trim.out.metadata)
-      publish_gisaid(postprocess_gisaid.out.fasta, postprocess_gisaid.out.metadata, align_and_variant_call.out.variants)
+      publish_gisaid(filter_and_trim.out.fasta, filter_and_trim.out.metadata, align_and_variant_call.out.variants)
     emit:
       fasta = postprocess_gisaid.out.fasta
       metadata = postprocess_gisaid.out.metadata

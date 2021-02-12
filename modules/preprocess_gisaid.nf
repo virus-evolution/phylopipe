@@ -3,6 +3,7 @@
 nextflow.enable.dsl = 2
 
 project_dir = projectDir
+publish_dev = file(params.publish_dev)
 
 
 process gisaid_process_json {
@@ -69,6 +70,31 @@ process gisaid_add_columns_to_metadata {
 }
 
 
+process gisaid_counts_by_country {
+    /**
+    * Outputs number of sequences per country
+    * @input metadata
+    * @output "gisaid_counts_by_country.csv"
+    */
+    publishDir "${publish_dev}/${params.category}", pattern: "*.csv", mode: 'copy'
+
+
+    input:
+    path metadata
+
+    output:
+    path "gisaid_counts_by_country.csv"
+
+    script:
+    """
+    fastafunk count \
+        --in-metadata ${metadata} \
+        --group-column edin_admin_0 \
+        --log-file "gisaid_counts_by_country.csv"
+    """
+}
+
+
 omissions = file(params.omissions)
 
 workflow preprocess_gisaid {
@@ -77,6 +103,7 @@ workflow preprocess_gisaid {
     main:
         gisaid_process_json(gisaid_json)
         gisaid_add_columns_to_metadata(gisaid_process_json.out.fasta, gisaid_process_json.out.metadata)
+        gisaid_counts_by_country(gisaid_add_columns_to_metadata.out)
     emit:
         fasta = gisaid_process_json.out.fasta
         metadata = gisaid_add_columns_to_metadata.out
