@@ -17,7 +17,7 @@
     },
     {
       "suffix": "global_variants",
-      "fasta": "gisaid",
+      "data": "gisaid",
       "metadata_fields": ["sequence_name"],
       "mutations": true,
       "exclude_uk": true
