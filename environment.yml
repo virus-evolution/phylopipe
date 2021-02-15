@@ -1,18 +1,50 @@
-name: grapevine_nextflow
+name: grapevine-global-tree
 channels:
   - bioconda
   - conda-forge
   - defaults
   - cov-ert
+  - smirarab
+  - anaconda
 dependencies:
+  - bc
+  - bcftools
+  - cxx-compiler
+  - protobuf=3.12
+  - cmake=3.10
+  - make
+  - boost-cpp
+  - git
+  - wget
+  - rsync
+  - easel
+  - iqtree>2
+  - fasttree
+  - goalign
+  - gotree
+  - mafft
+  - raxml-ng
+  - newick_utils
+  - parallel
+  - r-ape
+  - r-bms
+  - r-base=3.6.3
+  - r-ggplot2
+  - r-phangorn
+  - r-readr
+  - rapidnj
+  - snakemake-minimal=5.13
+  - seqmagick
+  - treeshrink
+  - ucsc-faFilter
+  - ucsc-faSomeRecords
+  - ucsc-faSplit
   - biopython=1.74
   - coreutils=8.25
   - minimap2=2.17
   - pip=19.3.1
   - python=3.7.4
-  - snakemake-minimal
-  - nextflow
-  - r-base=3.5.1
+  - r-base=3.6
   - r-networkd3
   - benjamincjackson::gofasta=v0.0.3
   - pip:
@@ -35,4 +67,5 @@ dependencies:
       - descartes==1.1.0
       - joypy==0.2.2
       - pytools==2020.1
+      - dendropyv4.5.2
 
