@@ -140,7 +140,7 @@ process reroot_treeshrink {
 
 
 
-workflow build_tree {
+workflow build_new_tree {
     take:
         alignment
     main:
@@ -160,6 +160,38 @@ workflow build_tree {
 
 }
 
+
+process make_guide_tree_protobuf {
+    /**
+    * Takes global alignment, runs fa-to-vcf and usher
+    * @input alignment
+    */
+
+    input:
+    path alignment
+
+    output:
+    path ${tree.baseName}.tree
+    path alignments.log
+
+    script:
+    """
+    python3 Fasta2UShER.py -reference ${reference}  -inpath ./test/Fasta2UShER/ -unaligned -output ./test/test_merged.vcf
+    usher -t global_phylo.nh -v test/global_samples.vcf -o global_assignments.pb -d output/
+    """
+}
+workflow update_tree {
+    take:
+        alignment
+        tree
+    main:
+        make_protobuf
+    emit:
+        reroot_treeshrink.out
+
+}
+
+reference = file(params.reference)
 
 workflow {
     alignment = file(params.alignment)

@@ -1,26 +1,160 @@
 {
-  "gisaid": [
+  "microreact": [
     {
-      "suffix": "all",
-      "fasta": "gisaid",
-      "metadata_fields": ["sequence_name","country","edin_admin_1","edin_admin_2","edin_travel","edin_date_stamp","sample_date","epi_week","lineage","lineages_version","lineage_support","covv_accession_id","covv_virus_name","covv_location","covv_add_host_info","covv_assembly_method","covv_gender","covv_host","covv_passage","covv_patient_age","covv_seq_technology","covv_specimen","covv_subm_date"],
+      "suffix": "public",
+      "tree": "newick",
+      "anonymize": true,
+      "metadata_fields": [
+        "sequence_name",
+        "sample_date",
+        "epi_week",
+        "country",
+        "adm1",
+        "adm2",
+        "submission_org_code",
+        "pillar_2",
+        "lineage",
+        "lineage_support",
+        "uk_lineage",
+        "primary_uk_lineage"
+      ],
       "mutations": true,
-      "where": "sample_date=covv_collection_date epi_week=edin_epi_week country=edin_admin_0"
+      "where": "primary_uk_lineage=microreact_lineage"
     },
     {
-      "suffix": "global",
-      "fasta": "gisaid",
-      "metadata_fields": ["sequence_name","country","edin_admin_1","edin_admin_2","edin_travel","edin_date_stamp","sample_date","epi_week","lineage","lineages_version","lineage_support","covv_accession_id","covv_virus_name","covv_location","covv_add_host_info","covv_assembly_method","covv_gender","covv_host","covv_passage","covv_patient_age","covv_seq_technology","covv_specimen","covv_subm_date"],
+      "suffix": "private",
+      "tree": "newick",
+      "metadata_fields": [
+        "sequence_name",
+        "sample_date",
+        "epi_week",
+        "country",
+        "adm1",
+        "adm2",
+        "submission_org_code",
+        "pillar_2",
+        "is_hcw",
+        "travel_history",
+        "lineage",
+        "lineage_support",
+        "uk_lineage",
+        "primary_uk_lineage"
+      ],
       "mutations": true,
-      "exclude_uk": true,
-      "where": "sample_date=covv_collection_date epi_week=edin_epi_week country=edin_admin_0"
+      "where": "primary_uk_lineage=microreact_lineage"
+    }
+  ],
+  "metadata": [
+    {
+      "suffix": "public",
+      "metadata_fields": [
+        "sequence_name",
+        "cog_id",
+        "gisaid_id",
+        "sample_date",
+        "epi_week",
+        "country",
+        "adm1",
+        "pillar_2",
+        "is_surveillance",
+        "is_travel_history",
+        "travel_history",
+        "lineage",
+        "lineage_support",
+        "lineages_version",
+        "uk_lineage",
+        "del_lineage",
+        "del_introduction",
+        "phylotype"
+      ],
+      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id adm1=adm1_UK"
     },
     {
-      "suffix": "global_variants",
-      "data": "gisaid",
-      "metadata_fields": ["sequence_name"],
-      "mutations": true,
-      "exclude_uk": true
+      "suffix": "consortium",
+      "metadata_fields": [
+        "sequence_name",
+        "cog_id",
+        "gisaid_id",
+        "sample_date",
+        "epi_week",
+        "submission_org_code",
+        "root_sample_id",
+        "country",
+        "adm1",
+        "adm2",
+        "outer_postcode",
+        "adm2_raw",
+        "adm2_source",
+        "NUTS1",
+        "region",
+        "latitude",
+        "longitude",
+        "location",
+        "source_age",
+        "source_sex",
+        "sample_type_collected",
+        "sample_type_received",
+        "swab_site",
+        "ct_n_ct_value",
+        "ct_n_test_kit",
+        "ct_n_test_platform",
+        "ct_n_test_target",
+        "pillar_2",
+        "is_surveillance",
+        "is_travel_history",
+        "travel_history",
+        "lineage",
+        "lineage_support",
+        "lineages_version",
+        "uk_lineage",
+        "del_lineage",
+        "del_introduction",
+        "phylotype"
+      ],
+      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id",
+      "mutations": true
+    }
+  ],
+  "trees": [
+    {
+      "tree": "nexus",
+      "metadata_fields": [
+        "sequence_name",
+        "gisaid_id",
+        "sample_date",
+        "epi_week",
+        "country",
+        "adm1",
+        "adm2",
+        "NUTS1",
+        "is_surveillance",
+        "is_travel_history",
+        "travel_history",
+        "lineage",
+        "lineage_support",
+        "uk_lineage",
+        "del_lineage",
+        "del_introduction",
+        "phylotype"
+      ],
+      "where": "gisaid_id=covv_accession_id"
+    },
+    {
+      "tree": "newick"
+    }
+  ],
+  "public": [
+    {
+      "tree": "newick"
+    }
+  ],
+  "civet": [
+    {
+      "tree": "newick",
+      "fasta": "cog_global",
+      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","is_surveillance","is_travel_history","travel_history","lineage","lineage_support","uk_lineage","del_lineage","phylotype"],
+      "where": "epi_week=edin_epi_week country=adm0"
     }
   ]
 }
+

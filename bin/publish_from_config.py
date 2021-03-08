@@ -6,25 +6,23 @@ import subprocess
 import os
 import sys
 import glob
+import random
+from anonymize_microreact import anonymize_microreact
 
 class Error (Exception): pass
 
 def parse_args():
     parser = argparse.ArgumentParser(description="""Create published files from config file""",
                                     formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--unaligned_fasta', dest = 'unaligned_fasta', required=False, help='Raw FASTA')
-    parser.add_argument('--aligned_fasta', dest = 'aligned_fasta', required=False, help='Aligned, masked, untrimmed FASTA')
-    parser.add_argument('--trimmed_fasta', dest = 'trimmed_fasta', required=False, help='Aligned, masked, trimmed and filtered FASTA')
-    parser.add_argument('--gisaid_fasta', dest = 'global_fasta', required=False, help='GISAID aligned FASTA')
-    parser.add_argument('--cog_global_fasta', dest = 'cog_global_fasta', required=False, help='COG GISAID aligned FASTA')
+    parser.add_argument('--in-fasta', dest = 'in_fasta', required=False, help='FASTA')
+    parser.add_argument('--min-metadata', dest = 'min_metadata', required=False, help='Metadata columns for all outputs')
+    parser.add_argument('--full-metadata', dest = 'full_metadata', required=False, help='MASSIVE CSV')
 
-    parser.add_argument('--cog_metadata', dest = 'cog_metadata', required=False, help='MASSIVE CSV')
-    parser.add_argument('--gisaid_metadata', dest = 'global_metadata', required=False, help='MASSIVE CSV')
-    parser.add_argument('--cog_global_metadata', dest = 'cog_global_metadata', required=False, help='MASSIVE CSV')
+    parser.add_argument('--variants', dest = 'variants', required=False, help='Mutations CSV')
+    parser.add_argument('--seed', dest = 'seed', required=False, help='If anonymize, use this random seed')
 
-    parser.add_argument('--cog_variants', dest = 'cog_variants', required=False, help='Mutations CSV')
-    parser.add_argument('--gisaid_variants', dest = 'global_variants', required=False, help='Mutations CSV')
-    parser.add_argument('--cog_global_variants', dest = 'cog_global_variants', required=False, help='Mutations CSV')
+    parse.add_argument('--newick-tree', dest = 'newick_tree', required=False, help='Newick tree')
+    parse.add_argument('--nexus-tree', dest = 'nexus_tree', required=False, help='Nexus tree')
 
     parser.add_argument('--recipes', dest = 'recipes', required=True, help='JSON of recipes')
     parser.add_argument('--date', dest = 'date', required=True, help='Datestamp for published files')
@@ -32,73 +30,55 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-#"data": "cog", "gisaid" or "cog_global"
-#"fasta": "unaligned", "aligned", "trimmed", "cog_global" or "gisaid"
 #"metadata_fields": []
 #"mutations": True or False to add columns from mutations
 #"where": free text to be passed to fastafunk fetch --where-column
 #"suffix": something to append to file names
 #"exclude_uk": True or False to exclude samples from UK
+#"uk_only": True or False to include only samples from UK
+#"tree": "newick" or "nexus"
+#"anonymize": True or False to anonymize COG sequences e.g. for microreact
+#"seed": int, seed to use for anonymizing
 
-def get_info_from_config(config_dict, outdir, date, fasta_dict, csv_dict, var_dict):
-    info_dict = {"suffix":None, "data":None, "fasta":None, "metadata_fields":None,
-                 "where": None, "mutations":False, "exclude_uk":False, "date": date,
-                 "in_fa":None, "in_csv":None, "in_var":None,
-                 "out_fa":"tmp.fa", "out_csv":"tmp.csv", "out_var":None}
+def get_info_from_config(config_dict, outdir, date, min_csv, full_csv, var_csv, tree_dict):
+    info_dict = {"suffix":None, "metadata_fields":None, "where": None,
+                 "mutations":False, "exclude_uk":False, "tree":None,
+                 "anonymize":False, "date": date, "data": "cog_global",
+                 "in_fasta":None, "min_csv":None, "full_csv":None", in_var":None, "in_tree":None,
+                 "out_fasta":None, "out_csv":"tmp.csv", "out_var":"tmp_var.csv", "out_anon":None, "out_tree":None}
     info_dict.update(config_dict)
 
-    if info_dict["fasta"] in fasta_dict.keys():
-        info_dict["in_fa"] = fasta_dict[info_dict["fasta"]]
-    elif info_dict["data"] == "cog_global":
-        info_dict["in_fa"] = fasta_dict["cog_global"]
-    elif info_dict["data"] == "gisaid":
-        info_dict["in_fa"] = fasta_dict["gisaid"]
-    elif info_dict["data"] == "cog":
-            info_dict["in_fa"] = fasta_dict["trimmed"]
-    else:
-        sys.exit("Config entries need to specify either fasta in ['unaligned', 'aligned', 'trimmed', 'cog_global', 'gisaid'] or data \
-        in ['cog', 'cog_global', 'gisaid']")
-
-    if info_dict["data"] is None:
-        if info_dict["fasta"] == "cog_global":
-            info_dict["data"] = "cog_global"
-        elif info_dict["fasta"] == "gisaid":
-            info_dict["data"] = "gisaid"
-        else:
-            info_dict["data"] = "cog"
-
-    if info_dict["data"] == "cog_global":
-            info_dict["in_csv"] = csv_dict["cog_global"]
-            info_dict["in_var"] = var_dict["cog_global"]
-    elif info_dict["data"] == "cog":
-            info_dict["in_csv"] = csv_dict["cog"]
-            info_dict["in_var"] = var_dict["cog"]
-    elif info_dict["data"] == "gisaid":
-            info_dict["in_csv"] = csv_dict["gisaid"]
-            info_dict["in_var"] = var_dict["gisaid"]
+    if info_dict["tree"] in tree_dict.keys():
+        info_dict["in_tree"] = tree_dict[info_dict["tree"]]
 
     start = "%s/%s_%s" %(outdir, info_dict["data"], info_dict["date"])
+    tree_start = "%s_tree" %start
+    fasta_start = "%s_tree" %start
+
+    if info_dict["in_fasta"] or info_dict["tree"]:
+        start += "_metadata"
+
     if info_dict["suffix"]:
         start += "_%s" %info_dict["suffix"]
-    csv_end = ".csv"
+        tree_start += "_%s" %info_dict["suffix"]
+        fasta_start += "_%s" %info_dict["suffix"]
+
+
+    if info_dict["tree"] in tree_dict.keys():
+        info_dict["out_tree"] = "%s.%s" %(tree_start, info_dict["tree"])
 
     if info_dict["fasta"]:
-        csv_end = "_metadata.csv"
-        if info_dict["fasta"]=="aligned" or (info_dict["metadata_fields"] and info_dict["fasta"]!="unaligned"):
-            info_dict["out_fa"] = "%s_alignment.fa" %start
-        else:
-            info_dict["out_fa"] = "%s.fa" %start
+        info_dict["out_fasta"] = "%s.fasta" %fasta_start
 
-    if info_dict["mutations"]:
+    csv_end = ".csv"
+    if info_dict["anonymize"]:
+        info_dict["out_anon"] = "%s%s" %(start, csv_end)
+    elif info_dict["mutations"]:
         info_dict["out_var"] = "%s%s" %(start, csv_end)
     else:
         info_dict["out_csv"] = "%s%s" %(start, csv_end)
 
-    if info_dict["out_fa"] != "tmp.fa" and info_dict["in_fa"] is None:
-        sys.exit("Please provide the appropriate FASTA file")
-    if (info_dict["out_csv"] != "tmp.csv" or info_dict["out_var"] is not None) and info_dict["in_csv"] is None:
-        sys.exit("Please provide the appropriate CSV file")
-    if info_dict["out_var"] is not None and info_dict["in_var"] is None:
+    if info_dict["mutations"] and info_dict["in_var"] is None:
         sys.exit("Please provide the appropriate mutations file")
     print(info_dict)
     return info_dict
@@ -108,6 +88,7 @@ def syscall(cmd_list, allow_fail=False):
         print('None in list', cmd_list, file=sys.stderr)
         raise Error('Error in command. Cannot continue')
     command = ' '.join(cmd_list)
+    print(command)
     completed_process = subprocess.run(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
     if (not allow_fail) and completed_process.returncode != 0:
         print('Error running this command:', command, file=sys.stderr)
@@ -119,8 +100,8 @@ def syscall(cmd_list, allow_fail=False):
     return completed_process
 
 def publish_file(outdir, info_dict):
-    if info_dict["metadata_fields"] is None:
-        cmd_list = ["cp", info_dict["in_fa"], info_dict["out_fa"]]
+    if info_dict["tree"] is not None and not info_dict["anonymize"]:
+        cmd_list = ["cp", info_dict["in_tree"], info_dict["out_tree"]]
         syscall(cmd_list)
         return
 
@@ -131,15 +112,34 @@ def publish_file(outdir, info_dict):
         syscall(cmd_list)
         info_dict["in_csv"] = "no_uk.csv"
 
-    cmd_list = ["fastafunk fetch --in-fasta", info_dict["in_fa"], "--in-metadata", info_dict["in_csv"],
-              "--index-column sequence_name --out-fasta", info_dict["out_fa"],
-              "--out-metadata", info_dict["out_csv"], "--restrict"]
-    if info_dict["metadata_fields"]:
-            cmd_list.append("--filter-column")
-            cmd_list.extend(info_dict["metadata_fields"])
-    if info_dict["where"]:
-        cmd_list.append("--where-column %s" %info_dict["where"])
-    syscall(cmd_list)
+    if info_dict["uk_only"]:
+        cmd_list = ["head -n1", info_dict["in_csv"], "> uk_only.csv"]
+        syscall(cmd_list)
+        cmd_list = ["tail -n+2", info_dict["in_csv"], "| grep -E \"^England|^Northern_Ireland|^Wales|^Scotland\"", ">> uk_only.csv"]
+        syscall(cmd_list)
+        info_dict["in_csv"] = "uk_only.csv"
+
+    if info_dict["out_fasta"] is not None:
+        cmd_list = ["fastafunk fetch --in-fasta", info_dict["in_fa"], "--in-metadata", info_dict["full_csv"],
+                  "--index-column sequence_name --out-fasta", info_dict["out_fa"],
+                  "--out-metadata", info_dict["out_csv"], "--restrict --low-memory"]
+        if info_dict["metadata_fields"]:
+                cmd_list.append("--filter-column")
+                cmd_list.extend(info_dict["metadata_fields"])
+        if info_dict["where"]:
+            cmd_list.append("--where-column %s" %info_dict["where"])
+        syscall(cmd_list)
+    else:
+        cmd_list = ["fastafunk add_columns --in-metadata", info_dict["min_csv"],
+            "--in-data", info_dict["full_csv"], "--index-column sequence_name",
+            "--join-on sequence_name --out-metadata", info_dict["out_csv"]]
+            syscall(cmd_list)
+        if info_dict["metadata_fields"]:
+                cmd_list.append("--new-columns")
+                cmd_list.extend(info_dict["metadata_fields"])
+        if info_dict["where"]:
+            cmd_list.append("--where-column %s" %info_dict["where"])
+        syscall(cmd_list)
 
     if info_dict["mutations"]:
         cmd_list = ["fastafunk add_columns --in-metadata", info_dict["out_csv"],
@@ -147,20 +147,29 @@ def publish_file(outdir, info_dict):
         "--join-on query --out-metadata", info_dict["out_var"]]
         syscall(cmd_list)
 
-    tmp = glob.glob("tmp.*")
-    if len(tmp) > 0:
-        cmd_list = ["rm tmp.*"]
-        syscall(cmd_list)
+    if info_dict["anonymize"]:
+        if info_dict["mutations"]:
+            in_csv = info_dict["out_var"]
+        else:
+            in_csv = info_dict["out_csv"]
+        anonymize_microreact(metadata_in = in_csv,
+                             tree_in = info_dict["in_tree"],
+                             metadata_out = info_dict["out_anon"],
+                             tree_out = info_dict["out_tree"])
+
+    #tmp = glob.glob("tmp.*")
+    #if len(tmp) > 0:
+    #    cmd_list = ["rm tmp.*"]
+    #    syscall(cmd_list)
 
 def main():
     args = parse_args()
     print(args)
-    fasta_dict = {"unaligned":args.unaligned_fasta, "aligned":args.aligned_fasta, "trimmed":args.trimmed_fasta, "cog_global": args.cog_global_fasta, "gisaid": args.global_fasta}
-    print(fasta_dict)
-    csv_dict = {"cog":args.cog_metadata, "cog_global":args.cog_global_metadata, "gisaid": args.global_metadata}
-    print(csv_dict)
-    var_dict = {"cog":args.cog_variants, "cog_global":args.cog_global_variants, "gisaid": args.global_variants}
-    print(var_dict)
+    if args.seed:
+        random.seed(args.seed)
+
+    tree_dict = {"newick":args.newick_tree, "nexus":args.nexus_tree}
+    print(tree_dict)
 
     recipes = {}
     with open(args.recipes, 'r') as f:
@@ -169,7 +178,7 @@ def main():
     for outdir in recipes.keys():
         os.makedirs(outdir,exist_ok=True)
         for recipe in recipes[outdir]:
-            info_dict = get_info_from_config(recipe, outdir, args.date, fasta_dict, csv_dict, var_dict)
+            info_dict = get_info_from_config(recipe, outdir, args.date, args.min_csv, args.full_csv, args.var_csv, tree_dict)
             publish_file(outdir, info_dict)
 
 if __name__ == '__main__':
