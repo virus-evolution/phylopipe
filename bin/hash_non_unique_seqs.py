@@ -2,6 +2,7 @@
 
 from Bio import SeqIO
 import argparse
+import csv
 
 def parse_args():
     parser = argparse.ArgumentParser(description="""Pick a representative sample for each unique sequence""",
@@ -53,6 +54,7 @@ def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file, in_metadat
             for row in reader:
                 if row["epi_week"] not in [None, "None", ""]:
                     date_dict[row["fasta_header"]] = row["epi_week"]
+        print("Found", len(date_dict), "epi_week dates")
 
     with open(out_fasta, "w") as fasta, open(out_metadata, "w") as metadata:
         metadata.write("tip,redundant\n")

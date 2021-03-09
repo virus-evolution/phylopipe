@@ -47,13 +47,13 @@ def filter(in_fasta, in_metadata, out_fasta, out_metadata, include_true, exclude
             filter = is_uk(row)
             while(filter):
                 for column in exclude_true:
-                    if column in reader.fieldnames and row[column] in [True, "True"]:
+                    if column in reader.fieldnames and row[column] in [True, "True", "Yes", "yes", "Y"]:
                         row["why_excluded"] = "Filtered because %s is True" %column
                         writer.writerow(row)
                         filter=False
                         break
                 for column in include_true:
-                    if column in reader.fieldnames and row[column] not in [True, "True"]:
+                    if column in reader.fieldnames and row[column] not in [True, "True", "Yes", "yes", "Y"]:
                         row["why_excluded"] = "Filtered because %s is not True" %column
                         writer.writerow(row)
                         filter=False

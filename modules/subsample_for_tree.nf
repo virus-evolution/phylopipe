@@ -8,7 +8,7 @@ publish_dev = file(params.publish_dev)
 
 process filter_uk {
     /**
-    * Filters UK sequences by metadata criteria
+    * Filters UK sequences by metadata to exclude biosample duplicates and include only surveillance samples
     * @input fasta, metadata
     */
 
