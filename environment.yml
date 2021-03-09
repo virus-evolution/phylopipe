@@ -4,68 +4,19 @@ channels:
   - conda-forge
   - defaults
   - cov-ert
-  - smirarab
-  - anaconda
 dependencies:
-  - bc
-  - bcftools
-  - cxx-compiler
-  - protobuf=3.12
-  - cmake=3.10
-  - make
-  - boost-cpp
-  - git
-  - wget
-  - rsync
-  - easel
-  - iqtree>2
-  - fasttree
-  - goalign
-  - gotree
-  - mafft
-  - raxml-ng
-  - newick_utils
-  - parallel
-  - r-ape
-  - r-bms
-  - r-base=3.6.3
-  - r-ggplot2
-  - r-phangorn
-  - r-readr
-  - rapidnj
-  - snakemake-minimal=5.13
-  - seqmagick
-  - treeshrink
-  - ucsc-faFilter
-  - ucsc-faSomeRecords
-  - ucsc-faSplit
   - biopython=1.74
   - coreutils=8.25
-  - minimap2=2.17
+  - iqtree=1.6
+  - mafft
   - pip=19.3.1
   - python=3.7.4
-  - r-base=3.6
+  - snakemake-minimal
+  - fasttree
+  - gotree
+  - jclusterfunk
+  - r-base=3.5.1
   - r-networkd3
-  - benjamincjackson::gofasta=v0.0.3
   - pip:
-      - git+https://github.com/COG-UK/phylo-reports.git
-      - git+https://github.com/cov-lineages/pangolin.git
-      - git+https://github.com/cov-lineages/pangoLEARN.git
-      - git+https://github.com/cov-ert/datafunk.git
       - git+https://github.com/cov-ert/fastafunk.git
-      - matplotlib==3.2.1
-      - numpy==1.18.1
-      - pweave==0.30.3
-      - scipy==1.4.1
-      - tabulate==0.8.7
-      - pandas==1.0.1
-      - requests==2.20.0
-      - epiweeks==2.1.1
-      - argparse==1.4.0
-      - geopandas==0.7.0
-      - shapely==1.7.0
-      - descartes==1.1.0
-      - joypy==0.2.2
-      - pytools==2020.1
-      - dendropyv4.5.2
-
+      - git+https://github.com/cov-ert/clusterfunk.git

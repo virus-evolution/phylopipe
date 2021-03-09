@@ -7,6 +7,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="""Pick a representative sample for each unique sequence""",
                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--in-fasta', dest = 'in_fasta', required=True, help='Aligned FASTA')
+    parser.add_argument('--in-metadata', dest = 'in_metadata', required=False, help='CSV: if provided hash keeps most recent sequence as representative')
     parser.add_argument('--outgroups', dest = 'outgroups', required=False, help='Lineage splits file containing representative outgroups')
     parser.add_argument('--out-fasta', dest = 'out_fasta', required=True, help='FASTA to write out')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV to write out')
@@ -32,7 +33,7 @@ def parse_outgroups(outgroup_file):
             line = outgroup_handle.readline()
     return(outgroups)
 
-def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file):
+def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file, in_metadata=None):
     outgroups = parse_outgroups(outgroup_file)
     records = SeqIO.index(in_fasta, "fasta")
     hash_dict = {}
@@ -44,6 +45,14 @@ def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file):
             hash_dict[seq] = hash_dict[seq] + [record_id]
         else:
             hash_dict[seq] = [record_id]
+
+    date_dict = {}
+    if in_metadata is not None:
+        with open(in_metadata, 'r', newline = '') as csv_in:
+            reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+            for row in reader:
+                if row["epi_week"] not in [None, "None", ""]:
+                    date_dict[row["fasta_header"]] = row["epi_week"]
 
     with open(out_fasta, "w") as fasta, open(out_metadata, "w") as metadata:
         metadata.write("tip,redundant\n")
@@ -64,10 +73,17 @@ def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file):
                         value.remove(id)
 
                 if not r:
-                    r = records[value[0]]
+                    index = 0
+                    date = 0
+                    if in_metadata is not None:
+                        for i,id in enumerate(value):
+                            if id in date_dict and date_dict[id] > date:
+                                index = i
+                                date = date_dict[id]
+                    r = records[value[index]]
                     fasta.write(">" + r.id + "\n")
                     fasta.write(str(r.seq) + "\n")
-                    value.remove(value[0])
+                    value.remove(value[index])
 
                 metadata.write(r.id + ",")
                 metadata.write("|".join(value) + "\n")
