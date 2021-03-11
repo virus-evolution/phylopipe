@@ -96,9 +96,9 @@ process filter_on_sample_date {
 
             for row in reader:
                 if "why_excluded" not in row:
-                    row["why_excluded"] = None
+                    row["why_excluded"] = ""
 
-                if row["why_excluded"] in reader.fieldnames and row["why_excluded"] is not None:
+                if row["why_excluded"] in reader.fieldnames and row["why_excluded"] not in [None,"None",""]:
                     writer.writerow(row)
                     continue
 

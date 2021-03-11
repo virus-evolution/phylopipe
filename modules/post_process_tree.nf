@@ -25,6 +25,7 @@ process expand_hashmap {
         -i "${tree}" \
         --metadata ${hashmap} \
         --unique-only \
+        --ignore-missing \
         --format newick \
         -o "${tree.baseName}.expanded.tree"
     """
@@ -272,6 +273,24 @@ process annotate_tree_uk_lineage {
     """
 }
 
+process dequote_tree {
+    /**
+    * Dequotes tree
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "${tree.baseName}.dequote.tree"
+
+    script:
+    """
+    sed "s/'//g" ${tree} > "${tree.baseName}.dequote.tree"
+    """
+}
+
 process cut_out_tree {
     /**
     * Cuts out tree corresponding to a UK lineage
@@ -311,7 +330,7 @@ process phylotype_cut_tree {
     """
     mkdir -p phylotyped_trees
     clusterfunk phylotype \
-        --threshold ${params.phytlotype_threshold} \
+        --threshold ${params.phylotype_threshold} \
         --prefix "${tree.baseName}_1" \
         --input ${tree} \
         --in-format newick \
@@ -329,7 +348,7 @@ process get_uk_phylotypes_csv {
     path tree
 
     output:
-    path "phylotype_csvs/${tree.baseName}.tree"
+    path "phylotype_csvs/${tree.baseName}.csv"
 
     script:
     """
@@ -412,23 +431,29 @@ workflow post_process_tree {
         output_annotations.out.splitCsv(header: true)
                           .map(row -> ["${row.taxon}", "${row.uk_lineage}"])
                           .collectFile() { item -> [ "${item[1]}.txt", "${item[0]}" + '\n' ] }
+                          .filter { it.countLines() > 2 }
                           .subscribe {
                                  println "File ${it.name} contains:"
                                  println it.text
                           }
                           .set{ uk_lineages_ch }
-        cut_out_tree(sort_and_collapse.out, uk_lineages_ch)
-        //phylotype_cut_tree(cut_out_tree.out)
-        //get_uk_phylotypes_csv(phylotype_cut_tree.out)
-        //get_uk_phylotypes_csv.collectFile(keepHeader: true, skip: 1).set{ uk_phylotypes_csv }
-        //update_metadata_with_phylotypes(update_uk_lineage_metadata.out,uk_phylotypes_csv)
-        //annotate_tree_phylotype(annotate_tree_uk_lineage.out, update_metadata_with_phylotypes.out)
+        dequote_tree(sort_and_collapse.out)
+        cut_out_tree(dequote_tree.out, uk_lineages_ch)
+        phylotype_cut_tree(cut_out_tree.out)
+        get_uk_phylotypes_csv(phylotype_cut_tree.out)
+        get_uk_phylotypes_csv.out.collectFile(keepHeader: true, skip: 1)
+                                 .subscribe { println "File ${it.name} contains:"
+                                              println it.text
+                                            }
+                                            .set{ uk_phylotypes_csv }
+        update_metadata_with_phylotypes(update_uk_lineage_metadata.out,uk_phylotypes_csv)
+        annotate_tree_phylotype(annotate_tree_uk_lineage.out, update_metadata_with_phylotypes.out)
     emit:
-        //tree = annotate_tree_phylotype.out
-        //metadata = update_metadata_with_phylotypes.out
-        newick_tree = sort_and_collapse.out
-        nexus_tree = annotate_tree_uk_lineage.out
-        metadata = update_uk_lineage_metadata.out
+        nexus_tree = annotate_tree_phylotype.out
+        metadata = update_metadata_with_phylotypes.out
+        newick_tree = dequote_tree.out
+        //nexus_tree = annotate_tree_uk_lineage.out
+        //metadata = update_uk_lineage_metadata.out
 }
 
 workflow {

@@ -36,7 +36,7 @@ process split_fasta {
     range={\$num_lineages..1}
     for i in \$(eval echo \${range})
     do
-        line=\$(tail -n\$i log.txt | head -n1)
+        line=\$(tail -n\$i .command.log | head -n1)
         echo ">\$line\\n" >> pre_tree.json
     done
     echo "'}}" >> pre_tree.json
@@ -79,6 +79,25 @@ process fasttree {
     """
 }
 
+process veryfasttree {
+    /**
+    * Runs fasttree on a lineage
+    * @input lineage_fasta
+    */
+
+    input:
+    tuple val(lineage), path(lineage_fasta)
+
+    output:
+    tuple val(lineage), path("${lineage_fasta.baseName}.unrooted.tree")
+
+    script:
+    """
+    VeryFastTree -double-precision -nosupport -nt ${lineage_fasta} > ${lineage_fasta.baseName}.unrooted.tree
+    #touch ${lineage_fasta.baseName}.unrooted.tree
+    """
+}
+
 process root_tree {
     /**
     * Roots tree with given outgroups
@@ -112,9 +131,10 @@ process graft_tree {
     input:
     path scions
     val lineages
+    val label
 
     output:
-    path "cog_gisaid_grafted.tree"
+    path "cog_gisaid_grafted.${label}.tree"
 
     script:
     """
@@ -129,25 +149,6 @@ process graft_tree {
         --scion-annotation-name scion_lineage \
         --annotate-scions ${lineages}
     #touch cog_gisaid_grafted.tree
-    """
-}
-
-
-process dequote_tree {
-    /**
-    * Dequotes tree
-    * @input tree
-    */
-
-    input:
-    path tree
-
-    output:
-    path "${tree.baseName}.dequote.tree"
-
-    script:
-    """
-    sed "s/'//g" ${tree} > "${tree.baseName}.dequote.tree"
     """
 }
 
@@ -186,7 +187,7 @@ lineage_splits = file(params.lineage_splits)
 lineage_aliases = file(params.lineage_aliases)
 guide_tree = file(params.guide_tree)
 
-workflow build_split_grafted_tree {
+workflow build_split_grafted_fasttree {
     take:
         fasta
         metadata
@@ -201,16 +202,36 @@ workflow build_split_grafted_tree {
         root_tree(unrooted_tree_ch)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
         root_tree.out.trees.collect().set{ trees_ch }
-        graft_tree(trees_ch, lineages_ch)
-        dequote_tree(graft_tree.out)
-        announce_tree_complete(dequote_tree.out)
+        graft_tree(trees_ch, lineages_ch, "FT")
+        announce_tree_complete(graft_tree.out)
     emit:
-        tree = dequote_tree.out
+        tree = graft_tree.out
+}
+
+workflow build_split_grafted_veryfasttree {
+    take:
+        fasta
+        metadata
+    main:
+        split_fasta(fasta,metadata)
+        if (params.webhook)
+            announce_split(split_fasta.out.json)
+        split_fasta.out.fasta.flatMap { f -> f }.map { f -> [f.baseName,f] }.set{ split_fasta_ch }
+        fasttree(split_fasta_ch)
+        Channel.from(lineage_splits).splitCsv(header: false, skip: 1).set{ split_outgroup_ch }
+        fasttree.out.join(split_outgroup_ch).set{ unrooted_tree_ch }
+        root_tree(unrooted_tree_ch)
+        root_tree.out.lineages.toSortedList().set{ lineages_ch }
+        root_tree.out.trees.collect().set{ trees_ch }
+        graft_tree(trees_ch, lineages_ch,"VFT")
+        announce_tree_complete(graft_tree.out)
+    emit:
+        tree = graft_tree.out
 }
 
 workflow {
     fasta = file(params.unique_fasta)
     metadata = file(params.metadata)
 
-    build_split_grafted_tree(fasta,metadata)
+    build_split_grafted_veryfasttree(fasta,metadata)
 }

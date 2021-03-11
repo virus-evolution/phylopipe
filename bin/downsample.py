@@ -70,9 +70,9 @@ def num_unique(muts1, muts2):
     return len(u1+u2)
 
 def should_downsample_row(row, downsample_date_excluded=True, downsample_included=False):
-    if downsample_included and row["why_excluded"] is None:
+    if downsample_included and row["why_excluded"] in [None, "None", ""]:
         return True
-    if downsample_date_excluded and row["why_excluded"] is not None:
+    if downsample_date_excluded and row["why_excluded"] not in [None, "None", ""]:
         if row["why_excluded"].startswith("sample_date older than"):
             return True
         return False
@@ -109,9 +109,9 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
 
             if fasta_header in outgroups or not should_downsample_row(row,downsample_date_excluded, downsample_included):
                 if fasta_header in outgroups:
-                    row["why_excluded"]=None
+                    row["why_excluded"]=""
                 writer.writerow(row)
-                if row["why_excluded"] in [None, '', 'None'] and fasta_header in indexed_fasta:
+                if row["why_excluded"] in [None, "None", ""] and fasta_header in indexed_fasta:
                     seq_rec = indexed_fasta[fasta_header]
                     fa_out.write(">" + seq_rec.id + "\n")
                     fa_out.write(str(seq_rec.seq) + "\n")
@@ -156,7 +156,7 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
                         var_dict[mut] = [fasta_header]
                     else:
                         var_dict[mut].append(fasta_header)
-                row["why_excluded"] = None
+                row["why_excluded"] = ""
                 writer.writerow(row)
                 if fasta_header in indexed_fasta:
                     seq_rec = indexed_fasta[fasta_header]

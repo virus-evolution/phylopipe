@@ -44,26 +44,28 @@ def filter(in_fasta, in_metadata, out_fasta, out_metadata, include_true, exclude
                 writer.writerow(row)
                 continue
 
-            filter = is_uk(row)
-            while(filter):
+            filtered = False
+            if is_uk(row):
                 for column in exclude_true:
                     if column in reader.fieldnames and row[column] in [True, "True", "Yes", "yes", "Y"]:
                         row["why_excluded"] = "Filtered because %s is True" %column
-                        writer.writerow(row)
-                        filter=False
+                        filtered=True
                         break
-                for column in include_true:
-                    if column in reader.fieldnames and row[column] not in [True, "True", "Yes", "yes", "Y"]:
-                        row["why_excluded"] = "Filtered because %s is not True" %column
-                        writer.writerow(row)
-                        filter=False
-                        break
+                else:
+                    for column in include_true:
+                        if column in reader.fieldnames and row[column] not in [True, "True", "Yes", "yes", "Y"]:
+                            row["why_excluded"] = "Filtered because %s is not True" %column
+                            filtered=True
+                            break
+            if filtered:
+                writer.writerow(row)
+                continue
 
             fasta_header = row["sequence_name"]
             if fasta_header in records:
-                out_fasta.write(">%s\\n" %fasta_header)
-                out_fasta.write("%s\\n" %str(records[fasta_header].seq))
-                row["why_excluded"] = None
+                out_fasta.write(">%s\n" %fasta_header)
+                out_fasta.write("%s\n" %str(records[fasta_header].seq))
+                row["why_excluded"] = ""
                 writer.writerow(row)
             else:
                 row["why_excluded"] = "No matching metadata"

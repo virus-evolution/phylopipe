@@ -36,16 +36,17 @@ def parse_outgroups(outgroup_file):
 
 def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file, in_metadata=None):
     outgroups = parse_outgroups(outgroup_file)
+    print(outgroups)
     records = SeqIO.index(in_fasta, "fasta")
     hash_dict = {}
 
     for record_id in records:
         seq = str(records[record_id].seq)
-
         if seq in hash_dict:
             hash_dict[seq] = hash_dict[seq] + [record_id]
         else:
             hash_dict[seq] = [record_id]
+    print("Found %i unique fasta sequences" %len(hash_dict))
 
     date_dict = {}
     if in_metadata is not None:
@@ -53,7 +54,7 @@ def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file, in_metadat
             reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
             for row in reader:
                 if row["epi_week"] not in [None, "None", ""]:
-                    date_dict[row["fasta_header"]] = row["epi_week"]
+                    date_dict[row["sequence_name"]] = int(row["epi_week"])
         print("Found", len(date_dict), "epi_week dates")
 
     with open(out_fasta, "w") as fasta, open(out_metadata, "w") as metadata:
@@ -92,7 +93,8 @@ def write_hash_dict(in_fasta, out_fasta, out_metadata, outgroup_file, in_metadat
 
 def main():
     args = parse_args()
-    write_hash_dict(args.in_fasta, args.out_fasta, args.out_metadata, args.outgroups)
+    print(args.in_fasta, args.out_fasta, args.out_metadata, args.outgroups, args.in_metadata)
+    write_hash_dict(args.in_fasta, args.out_fasta, args.out_metadata, args.outgroups, args.in_metadata)
 
 if __name__ == '__main__':
     main()
