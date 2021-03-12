@@ -432,20 +432,13 @@ workflow post_process_tree {
                           .map(row -> ["${row.taxon}", "${row.uk_lineage}"])
                           .collectFile() { item -> [ "${item[1]}.txt", "${item[0]}" + '\n' ] }
                           .filter { it.countLines() > 2 }
-                          .subscribe {
-                                 println "File ${it.name} contains:"
-                                 println it.text
-                          }
                           .set{ uk_lineages_ch }
         dequote_tree(sort_and_collapse.out)
         cut_out_tree(dequote_tree.out, uk_lineages_ch)
         phylotype_cut_tree(cut_out_tree.out)
         get_uk_phylotypes_csv(phylotype_cut_tree.out)
         get_uk_phylotypes_csv.out.collectFile(keepHeader: true, skip: 1)
-                                 .subscribe { println "File ${it.name} contains:"
-                                              println it.text
-                                            }
-                                            .set{ uk_phylotypes_csv }
+                                 .set{ uk_phylotypes_csv }
         update_metadata_with_phylotypes(update_uk_lineage_metadata.out,uk_phylotypes_csv)
         annotate_tree_phylotype(annotate_tree_uk_lineage.out, update_metadata_with_phylotypes.out)
     emit:

@@ -127,6 +127,8 @@ process graft_tree {
     * Grafts lineages trees together
     * @input scions, lineages, guide_tree
     */
+    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy'
+
 
     input:
     path scions
@@ -143,7 +145,7 @@ process graft_tree {
     clusterfunk graft \
         --scions ${scions} \
         --input ${guide_tree} \
-        --output "cog_gisaid_grafted.tree" \
+        --output "cog_gisaid_grafted.${label}.tree" \
         --in-format newick \
         --out-format newick \
         --scion-annotation-name scion_lineage \

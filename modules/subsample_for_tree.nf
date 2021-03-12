@@ -44,16 +44,16 @@ process hash_non_unique_seqs {
     path metadata
 
     output:
-    path "${fasta}.unique.fasta", emit: fasta
-    path "${fasta}.hashmap.csv", emit: hashmap
+    path "${fasta.baseName}.unique.fasta", emit: fasta
+    path "${fasta.baseName}.hashmap.csv", emit: hashmap
 
     script:
     """
     $project_dir/../bin/hash_non_unique_seqs.py \
         --in-fasta ${fasta} \
         --in-metadata ${metadata} \
-        --out-fasta "${fasta}.unique.fasta" \
-        --out-metadata "${fasta}.hashmap.csv" \
+        --out-fasta "${fasta.baseName}.unique.fasta" \
+        --out-metadata "${fasta.baseName}.hashmap.csv" \
         --outgroups ${lineage_splits}
     """
 }
