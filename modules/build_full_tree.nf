@@ -19,7 +19,7 @@ process usher_tree {
 
     output:
     path "trees/${tree.baseName}.USH.tree", emit: tree
-    path "trees/parsimony-scores.USH.tsv"", emit: scores
+    path "trees/parsimony-scores.USH.tsv", emit: scores
 
     script:
     """
