@@ -409,6 +409,35 @@ process annotate_tree_phylotype {
     """
 }
 
+process announce_annotation_complete {
+    /**
+    * Announces expanded and annotated tree
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "full_tree.json"
+
+    script:
+        if (params.webhook)
+            """
+            echo "{{'text':'" > full_tree.json
+            echo "*Phylopipe2.0: Hashmap expanded and annotated tree for ${params.date} complete*\\n" >> full_tree.json
+            echo "'}}" >> full_tree.json
+
+            echo 'webhook ${params.webhook}'
+
+            curl -X POST -H "Content-type: application/json" -d @full_tree.json ${params.webhook}
+            """
+        else
+           """
+           touch "full_tree.json"
+           """
+}
+
 workflow post_process_tree {
     take:
         tree
@@ -441,6 +470,7 @@ workflow post_process_tree {
                                  .set{ uk_phylotypes_csv }
         update_metadata_with_phylotypes(update_uk_lineage_metadata.out,uk_phylotypes_csv)
         annotate_tree_phylotype(annotate_tree_uk_lineage.out, update_metadata_with_phylotypes.out)
+        announce_annotation_complete(annotate_tree_phylotype.out)
     emit:
         nexus_tree = annotate_tree_phylotype.out
         metadata = update_metadata_with_phylotypes.out

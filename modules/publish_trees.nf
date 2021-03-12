@@ -164,7 +164,7 @@ workflow publish_trees {
                                     .set{ publish_input_ch }
         publish_recipes(publish_input_ch)
         outputs_ch = publish_recipes.out.all.collect()
-        announce_to_webhook(outputs_ch, "Phylopipe")
+        announce_to_webhook(outputs_ch, "Phylopipe2.0")
     emit:
         published = outputs_ch
 }

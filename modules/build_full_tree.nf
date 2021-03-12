@@ -36,6 +36,35 @@ process usher_tree {
     """
 }
 
+process announce_tree_complete {
+    /**
+    * Announces usher updated tree
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "usher_tree.json"
+
+    script:
+        if (params.webhook)
+            """
+            echo "{{'text':'" > usher_tree.json
+            echo "*Phylopipe2.0: Usher expanded tree for ${params.date} complete*\\n" >> usher_tree.json
+            echo "'}}" >> usher_tree.json
+
+            echo 'webhook ${params.webhook}'
+
+            curl -X POST -H "Content-type: application/json" -d @usher_tree.json ${params.webhook}
+            """
+        else
+           """
+           touch "usher_tree.json"
+           """
+}
+
 
 workflow build_full_tree {
     take:
@@ -43,6 +72,7 @@ workflow build_full_tree {
         newick_tree
     main:
         usher_tree(newick_tree,fasta)
+        announce_tree_complete(usher_tree.out.tree)
     emit:
         tree = usher_tree.out.tree
         scores = usher_tree.out.scores

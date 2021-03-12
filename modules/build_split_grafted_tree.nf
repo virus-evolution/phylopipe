@@ -31,7 +31,7 @@ process split_fasta {
         --aliases ${lineage_aliases}
 
     echo "{{'text':'" > pre_tree.json
-    echo "*Step 2: Ready for ${params.date} tree building*\\n" >> pre_tree.json
+    echo "*Phylopipe2.0: Ready for ${params.date} tree building*\\n" >> pre_tree.json
     num_lineages=\$(cat ${lineage_splits} | wc -l)
     range={\$num_lineages..1}
     for i in \$(eval echo \${range})
@@ -171,7 +171,7 @@ process announce_tree_complete {
         if (params.webhook)
             """
             echo "{{'text':'" > grafted_tree.json
-            echo "*Step 4: Initial grafted tree for ${params.date} complete*\\n" >> grafted_tree.json
+            echo "*Phylopipe2.0: Initial grafted tree for ${params.date} complete*\\n" >> grafted_tree.json
             echo "'}}" >> grafted_tree.json
 
             echo 'webhook ${params.webhook}'
