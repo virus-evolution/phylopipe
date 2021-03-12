@@ -11,6 +11,7 @@ process split_fasta {
     * Splits input fasta for subtrees
     * @input fasta, metadata
     */
+    memory { 6.GB }
 
     input:
     path fasta
@@ -64,6 +65,8 @@ process fasttree {
     * Runs fasttree on a lineage
     * @input lineage_fasta
     */
+    memory { lineage_fasta.size() * 25.B }
+    cpus 3
 
     input:
     tuple val(lineage), path(lineage_fasta)
@@ -84,6 +87,8 @@ process veryfasttree {
     * Runs fasttree on a lineage
     * @input lineage_fasta
     */
+    memory { lineage_fasta.size() * 25.B }
+    cpus 8
 
     input:
     tuple val(lineage), path(lineage_fasta)
@@ -93,7 +98,7 @@ process veryfasttree {
 
     script:
     """
-    VeryFastTree -double-precision -nosupport -nt ${lineage_fasta} > ${lineage_fasta.baseName}.unrooted.tree
+    VeryFastTree -double-precision -nosupport -nt ${lineage_fasta} -threads ${task.cpus} > ${lineage_fasta.baseName}.unrooted.tree
     #touch ${lineage_fasta.baseName}.unrooted.tree
     """
 }
