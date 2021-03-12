@@ -11,7 +11,7 @@ process split_fasta {
     * Splits input fasta for subtrees
     * @input fasta, metadata
     */
-    memory { 6.GB }
+    label 'retry_increasing_mem'
 
     input:
     path fasta
@@ -133,6 +133,7 @@ process graft_tree {
     * @input scions, lineages, guide_tree
     */
     publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy'
+    memory { 20.GB }
 
 
     input:

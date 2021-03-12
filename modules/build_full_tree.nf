@@ -11,9 +11,7 @@ process usher_tree {
     * Makes usher mutation annotated tree
     * @input tree, metadata
     */
-    memory { 4.GB * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    maxRetries 3
+    label 'retry_increasing_mem'
 
     publishDir "${publish_dev}", pattern: "trees/*.USH.tsv", mode: 'copy'
 
