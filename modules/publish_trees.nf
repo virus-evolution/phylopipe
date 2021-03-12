@@ -163,7 +163,7 @@ workflow publish_trees {
                                     .combine(nexus_tree)
                                     .set{ publish_input_ch }
         publish_tree_recipes(publish_input_ch)
-        outputs_ch = publish_tree_recipes.out.all.collect()
+        outputs_ch = publish_tree_recipes.out.collect()
         announce_to_webhook(outputs_ch, "Phylopipe2.0")
     emit:
         published = outputs_ch
