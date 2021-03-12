@@ -4,7 +4,6 @@ channels:
   - conda-forge
   - defaults
   - cov-ert
-  - anaconda
 dependencies:
   - biopython=1.74
   - coreutils=8.25
@@ -18,14 +17,10 @@ dependencies:
   - jclusterfunk
   - r-base=3.5.1
   - r-networkd3
-  - cxx-compiler
   - protobuf=3.12
-  - cmake=3.10
+  - cmake>=3.10
   - make
   - boost-cpp
-  - git
-  - wget
-  - rsync
   - pip:
       - git+https://github.com/cov-ert/fastafunk.git
       - git+https://github.com/cov-ert/clusterfunk.git

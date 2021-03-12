@@ -202,9 +202,10 @@ workflow subsample_for_tree {
         downsample(hash_non_unique_seqs.out.fasta, filter_on_sample_date.out)
         announce_summary(fasta, filter_uk.out.fasta, hash_non_unique_seqs.out.fasta, filter_on_sample_date.out, downsample.out.fasta)
     emit:
-        fasta = hash_non_unique_seqs.out.fasta
+        fasta = downsample.out.fasta
         metadata = downsample.out.metadata
         hashmap = hash_non_unique_seqs.out.hashmap
+        unique = hash_non_unique_seqs.out.fasta
 }
 
 
