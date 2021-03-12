@@ -11,7 +11,11 @@ process usher_tree {
     * Makes usher mutation annotated tree
     * @input tree, metadata
     */
-    publishDir "${publish_dev}", pattern: "trees/*.USH.*", mode: 'copy'
+    memory { 4.GB * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 3
+
+    publishDir "${publish_dev}", pattern: "trees/*.USH.tsv", mode: 'copy'
 
     input:
     path tree
@@ -33,6 +37,32 @@ process usher_tree {
           --outdir trees
     cp trees/uncondensed-final-tree.nh trees/${tree.baseName}.USH.tree
     cp trees/parsimony-scores.tsv trees/parsimony-scores.USH.tsv
+    """
+}
+
+process root_tree {
+    /**
+    * Roots tree with WH04
+    * @input tree
+    */
+
+    publishDir "${publish_dev}", pattern: "trees/*.tree", mode: 'copy'
+
+
+    input:
+    path tree
+
+    output:
+    path "${tree.baseName}.rooted.tree"
+
+    script:
+    """
+    jclusterfunk reroot \
+        --format newick \
+        -i ${tree} \
+        -o ${tree.baseName}.rooted.tree \
+        --outgroup Wuhan/WH04/2020
+    #touch ${tree.baseName}.rooted.tree
     """
 }
 
@@ -72,9 +102,10 @@ workflow build_full_tree {
         newick_tree
     main:
         usher_tree(newick_tree,fasta)
-        announce_tree_complete(usher_tree.out.tree)
+        root_tree(usher_tree.out.tree)
+        announce_tree_complete(root_tree.out)
     emit:
-        tree = usher_tree.out.tree
+        tree = root_tree.out.tree
         scores = usher_tree.out.scores
 }
 
