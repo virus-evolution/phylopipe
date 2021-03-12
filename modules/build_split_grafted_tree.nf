@@ -65,7 +65,7 @@ process fasttree {
     * Runs fasttree on a lineage
     * @input lineage_fasta
     */
-    memory { lineage_fasta.size() * 25.B }
+    memory { lineage_fasta.size() * 50.B }
     cpus 3
 
     input:
@@ -87,7 +87,7 @@ process veryfasttree {
     * Runs fasttree on a lineage
     * @input lineage_fasta
     */
-    memory { lineage_fasta.size() * 25.B }
+    memory { lineage_fasta.size() * 50.B }
     cpus 8
 
     input:
