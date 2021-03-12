@@ -227,7 +227,7 @@ workflow build_split_grafted_veryfasttree {
         split_fasta.out.fasta.flatMap { f -> f }.map { f -> [f.baseName,f] }.set{ split_fasta_ch }
         veryfasttree(split_fasta_ch)
         Channel.from(lineage_splits).splitCsv(header: false, skip: 1).set{ split_outgroup_ch }
-        fasttree.out.join(split_outgroup_ch).set{ unrooted_tree_ch }
+        veryfasttree.out.join(split_outgroup_ch).set{ unrooted_tree_ch }
         root_tree(unrooted_tree_ch)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
         root_tree.out.trees.collect().set{ trees_ch }
