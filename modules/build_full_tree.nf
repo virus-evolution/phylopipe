@@ -103,7 +103,7 @@ workflow build_full_tree {
         root_tree(usher_tree.out.tree)
         announce_tree_complete(root_tree.out)
     emit:
-        tree = root_tree.out.tree
+        tree = root_tree.out
         scores = usher_tree.out.scores
 }
 
