@@ -9,6 +9,7 @@ def parse_args():
                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--in-fasta', dest = 'in_fasta', required=True, help='Aligned FASTA')
     parser.add_argument('--in-metadata', dest = 'in_metadata', required=True, help='CSV: if provided hash keeps most recent sequence as representative')
+    parser.add_argument('--outgroups', dest = 'outgroups', required=False, help='Lineage splits file containing representative outgroups to protect')
     parser.add_argument('--out-fasta', dest = 'out_fasta', required=True, help='FASTA to write out')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV to write out')
     parser.add_argument('--include_true', required=False, nargs='+', help='List of CSV columns, include rows only if True')
@@ -17,6 +18,24 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def parse_outgroups(outgroup_file):
+    """
+    input is CSV, last column being the representative outgroups:
+    """
+    outgroups = []
+    if not outgroup_file:
+        return outgroups
+    with open(outgroup_file, "r") as outgroup_handle:
+        line = outgroup_handle.readline()
+        while line:
+            try:
+                outgroup = line.strip().split(",")[-1]
+                outgroups.append(outgroup)
+            except:
+                continue
+            line = outgroup_handle.readline()
+    return(outgroups)
+
 def is_uk(row):
     if "country" in row and row["country"] in ["UK", "United_Kingdom", "United Kingdom"]:
         return True
@@ -24,8 +43,8 @@ def is_uk(row):
         return True
     return False
 
-def filter(in_fasta, in_metadata, out_fasta, out_metadata, include_true, exclude_true):
-
+def filter(in_fasta, in_metadata, outgroup_file out_fasta, out_metadata, include_true, exclude_true):
+    outgroups = parse_outgroups(outgroup_file)
     records = SeqIO.index(in_fasta, "fasta")
 
     with open(in_metadata, 'r') as csv_in, \
@@ -40,6 +59,14 @@ def filter(in_fasta, in_metadata, out_fasta, out_metadata, include_true, exclude
         writer.writeheader()
 
         for row in reader:
+            fasta_header = row["sequence_name"]
+
+            if fasta_header in outgroups:
+                writer.writerow(row)
+                seq_rec = indexed_fasta[fasta_header]
+                fa_out.write(">" + seq_rec.id + "\n")
+                fa_out.write(str(seq_rec.seq) + "\n")
+
             if "why_excluded" in reader.fieldnames and row["why_excluded"] not in [None, "None", ""]:
                 writer.writerow(row)
                 continue
@@ -61,7 +88,6 @@ def filter(in_fasta, in_metadata, out_fasta, out_metadata, include_true, exclude
                 writer.writerow(row)
                 continue
 
-            fasta_header = row["sequence_name"]
             if fasta_header in records:
                 out_fasta.write(">%s\n" %fasta_header)
                 out_fasta.write("%s\n" %str(records[fasta_header].seq))
@@ -74,7 +100,7 @@ def filter(in_fasta, in_metadata, out_fasta, out_metadata, include_true, exclude
 
 def main():
     args = parse_args()
-    filter(args.in_fasta, args.in_metadata, args.out_fasta, args.out_metadata, args.include_true, args.exclude_true)
+    filter(args.in_fasta, args.in_metadata, args.outgroups, args.out_fasta, args.out_metadata, args.include_true, args.exclude_true)
 
 if __name__ == '__main__':
     main()

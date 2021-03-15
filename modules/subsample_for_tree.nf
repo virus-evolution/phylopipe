@@ -25,9 +25,9 @@ process filter_uk {
     $project_dir/../bin/filter.py \
             --in-fasta ${fasta} \
             --in-metadata ${metadata} \
+            --outgroups ${lineage_splits} \
             --out-fasta "${fasta.baseName}.filtered.fasta" \
             --out-metadata "${metadata.baseName}.filtered.csv" \
-            --include_true is_surveillance \
             --exclude_true duplicate
     """
 }
@@ -174,11 +174,11 @@ process announce_summary {
             echo "{{'text':'" > announce.json
                 echo "*Step 1: Subsampling ${params.date} for tree*\\n" >> announce.json
                 echo "> Number of sequences in COG and GISAID input files : \$(cat ${original} | grep '>' | wc -l)\\n" >> announce.json
-                echo "> Number of sequences after deduplication by biosample id : \$(cat ${deduplicated} | grep '>' | wc -l)\\n" >> announce.json
+                echo "> Number of sequences after filtering uk sequences (deduplication by biosample id and surveillance only): \$(cat ${deduplicated} | grep '>' | wc -l)\\n" >> announce.json
                 echo "> Number of unique sequences : \$(cat ${unique} | grep '>' | wc -l)\\n" >> announce.json
-                echo "> Number of sequences with sample_date older than ${params.time_window} days: \$(cat ${filtered_on_sample_date} | grep 'sample_date older than' | wc -l)\\n" >> announce.json
+                echo "> Number of (non-unique) sequences with sample_date older than ${params.time_window} days: \$(cat ${filtered_on_sample_date} | grep 'sample_date older than' | wc -l)\\n" >> announce.json
                 echo "> Number of sequences after downsampling: \$(cat ${downsampled} | grep '>' | wc -l)\\n" >> announce.json
-                echo "'}}" >> subsample_for_tree.json
+                echo "'}}" >> announce.json
 
             echo 'webhook ${params.webhook}'
 
