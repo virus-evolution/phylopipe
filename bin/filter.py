@@ -43,7 +43,7 @@ def is_uk(row):
         return True
     return False
 
-def filter(in_fasta, in_metadata, outgroup_file out_fasta, out_metadata, include_true, exclude_true):
+def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, include_true, exclude_true):
     outgroups = parse_outgroups(outgroup_file)
     records = SeqIO.index(in_fasta, "fasta")
 
