@@ -38,7 +38,7 @@ process hash_non_unique_seqs {
     * Subsets a unique set of sequences
     * @input fasta, metadata
     */
-    memory { 20.GB  + 5.GB * task.attempt }
+    memory { 20.GB  + 2.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 2
 
