@@ -87,7 +87,7 @@ process veryfasttree {
     * Runs fasttree on a lineage
     * @input lineage_fasta
     */
-    memory { lineage_fasta.size() * task.attempt * 80.B }
+    memory { lineage_fasta.size() * task.attempt * 70.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 1
     cpus 8
