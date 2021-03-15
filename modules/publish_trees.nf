@@ -100,7 +100,8 @@ process publish_tree_recipes {
     tuple path(fasta),path(min_metadata),path(metadata),path(variants),path(newick_tree),path(nexus_tree),path(recipe)
 
     output:
-    path "*/cog_*.*"
+    path "*/cog_*.*", emit: all
+    path "public/cog_*_tree.newick", optional: true, emit: tree
 
     script:
     """
@@ -114,6 +115,25 @@ process publish_tree_recipes {
       --seed ${params.seed} \
       --recipes ${recipe} \
       --date ${params.date}
+    """
+}
+
+process publish_s3 {
+    /**
+    * Publishes public files to s3
+    * @input tree
+    */
+
+    input:
+    tree
+
+    script:
+    """
+    mkdir -p s3dir
+    cp ${tree} s3dir/cog_global_tree.newick
+
+    s3cmd sync s3dir/ s3://cog-uk/phylogenetics/{params.date}/ --acl-public
+    s3cmd sync s3dir/ s3://cog-uk/phylogenetics/latest/ --acl-public
     """
 }
 
@@ -163,8 +183,9 @@ workflow publish_trees {
                                     .combine(nexus_tree)
                                     .set{ publish_input_ch }
         publish_tree_recipes(publish_input_ch)
-        outputs_ch = publish_tree_recipes.out.collect()
+        outputs_ch = publish_tree_recipes.out.all.collect()
         announce_to_webhook(outputs_ch, "Phylopipe2.0")
+        publish_s3(publish_tree_recipes.out.tree)
     emit:
         published = outputs_ch
 }
