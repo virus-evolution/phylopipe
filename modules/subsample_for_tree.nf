@@ -38,7 +38,7 @@ process hash_non_unique_seqs {
     * Subsets a unique set of sequences
     * @input fasta, metadata
     */
-    memory { 16.GB }
+    memory { 20.GB }
 
     input:
     path fasta
