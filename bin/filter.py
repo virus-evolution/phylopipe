@@ -12,8 +12,8 @@ def parse_args():
     parser.add_argument('--outgroups', dest = 'outgroups', required=False, help='Lineage splits file containing representative outgroups to protect')
     parser.add_argument('--out-fasta', dest = 'out_fasta', required=True, help='FASTA to write out')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV to write out')
-    parser.add_argument('--include_true', required=False, nargs='+', help='List of CSV columns, include rows only if True')
-    parser.add_argument('--exclude_true', required=False, nargs='+', help='List of CSV columns, exclude if True')
+    parser.add_argument('--include_true', required=False, nargs='+', default=[], help='List of CSV columns, include rows only if True')
+    parser.add_argument('--exclude_true', required=False, nargs='+', default=[], help='List of CSV columns, exclude if True')
 
     args = parser.parse_args()
     return args
@@ -63,9 +63,9 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
 
             if fasta_header in outgroups:
                 writer.writerow(row)
-                seq_rec = indexed_fasta[fasta_header]
-                fa_out.write(">" + seq_rec.id + "\n")
-                fa_out.write(str(seq_rec.seq) + "\n")
+                out_fasta.write(">%s\n" %fasta_header)
+                out_fasta.write("%s\n" %str(records[fasta_header].seq))
+                continue
 
             if "why_excluded" in reader.fieldnames and row["why_excluded"] not in [None, "None", ""]:
                 writer.writerow(row)
