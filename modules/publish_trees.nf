@@ -125,7 +125,7 @@ process publish_s3 {
     */
 
     input:
-    tree
+    path tree
 
     script:
     """
