@@ -172,7 +172,7 @@ process announce_summary {
         if (params.webhook)
             """
             echo "{{'text':'" > announce.json
-                echo "*Step 1: Subsampling ${params.date} for tree*\\n" >> announce.json
+                echo "*Phylopipe2.0: Subsampling ${params.date} for tree*\\n" >> announce.json
                 echo "> Number of sequences in COG and GISAID input files : \$(cat ${original} | grep '>' | wc -l)\\n" >> announce.json
                 echo "> Number of sequences after filtering uk sequences (deduplication by biosample id and surveillance only): \$(cat ${deduplicated} | grep '>' | wc -l)\\n" >> announce.json
                 echo "> Number of unique sequences : \$(cat ${unique} | grep '>' | wc -l)\\n" >> announce.json
