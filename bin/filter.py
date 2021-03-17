@@ -71,6 +71,11 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
                 writer.writerow(row)
                 continue
 
+            if "(" in fasta_header:
+                row["why_excluded"] = "dodgy name"
+                writer.writerow(row)
+                continue
+
             filtered = False
             if is_uk(row):
                 for column in exclude_true:
