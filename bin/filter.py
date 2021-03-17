@@ -22,15 +22,15 @@ def parse_outgroups(outgroup_file):
     """
     input is CSV, last column being the representative outgroups:
     """
-    outgroups = []
+    outgroups = {}
     if not outgroup_file:
         return outgroups
     with open(outgroup_file, "r") as outgroup_handle:
         line = outgroup_handle.readline()
         while line:
             try:
-                outgroup = line.strip().split(",")[-1]
-                outgroups.append(outgroup)
+                lineage,outgroup = line.strip().split(",")
+                outgroups[outgroup]=lineage
             except:
                 continue
             line = outgroup_handle.readline()
@@ -62,6 +62,8 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
             fasta_header = row["sequence_name"]
 
             if fasta_header in outgroups:
+                if "lineage" in reader.fieldnames:
+                    row["lineage"] = outgroups[fasta_header]
                 writer.writerow(row)
                 out_fasta.write(">%s\n" %fasta_header)
                 out_fasta.write("%s\n" %str(records[fasta_header].seq))

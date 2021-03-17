@@ -18,8 +18,8 @@ workflow {
 
 
     subsample_for_tree(ch_fasta,ch_metadata)
-    //build_split_grafted_fasttree(subsample_for_tree.out.fasta, ch_metadata)
-    build_split_grafted_veryfasttree(subsample_for_tree.out.fasta, ch_metadata)
+    //build_split_grafted_fasttree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata)
+    build_split_grafted_veryfasttree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata)
     build_full_tree(subsample_for_tree.out.unique, build_split_grafted_veryfasttree.out.tree)
     post_process_tree(build_full_tree.out.tree, subsample_for_tree.out.hashmap, subsample_for_tree.out.metadata)
     publish_trees(ch_fasta, post_process_tree.out.metadata, ch_variants, post_process_tree.out.newick_tree, post_process_tree.out.nexus_tree)
