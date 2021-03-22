@@ -65,7 +65,9 @@ process fasttree {
     * Runs fasttree on a lineage
     * @input lineage_fasta
     */
-    memory { lineage_fasta.size() * 50.B }
+    memory { 4.0 * task.attempt + lineage_fasta.size() * 0.000000065 < 96 ? 4.GB * task.attempt + lineage_fasta.size() * 65.B : 96.GB }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries = 1
     cpus 3
 
     input:
@@ -87,9 +89,9 @@ process veryfasttree {
     * Runs fasttree on a lineage
     * @input lineage_fasta
     */
-    memory { 4.0 * task.attempt + lineage_fasta.size() * 0.000000065 < 96 ? 4.GB * task.attempt + lineage_fasta.size() * 70.B : 906.GB }
+    memory { 8.0 * task.attempt + lineage_fasta.size() * 0.000000065 < 96 ? 8.GB * task.attempt + lineage_fasta.size() * 65.B : 96.GB }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    maxRetries = 2
+    maxRetries = 1
     cpus 8
 
     input:
@@ -134,7 +136,6 @@ process graft_tree {
     * Grafts lineages trees together
     * @input scions, lineages, guide_tree
     */
-    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy'
     memory { 20.GB }
 
 
@@ -159,6 +160,34 @@ process graft_tree {
         --scion-annotation-name scion_lineage \
         --annotate-scions ${lineages}
     #touch cog_gisaid_grafted.tree
+    """
+}
+
+
+process expand_hashmap {
+    /**
+    * Adds back in identical sequences using hashmap
+    * @input tree, hashmap
+    */
+    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy'
+
+
+    input:
+    path tree
+    path hashmap
+
+    output:
+    path "${tree.baseName}.expanded.tree"
+
+    script:
+    """
+    jclusterfunk insert \
+        -i "${tree}" \
+        --metadata ${hashmap} \
+        --unique-only \
+        --ignore-missing \
+        --format newick \
+        -o "${tree.baseName}.expanded.tree"
     """
 }
 
@@ -201,6 +230,7 @@ workflow build_split_grafted_fasttree {
     take:
         fasta
         metadata
+        hashmap
     main:
         split_fasta(fasta,metadata)
         if (params.webhook)
@@ -213,7 +243,8 @@ workflow build_split_grafted_fasttree {
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
         root_tree.out.trees.collect().set{ trees_ch }
         graft_tree(trees_ch, lineages_ch, "FT")
-        announce_tree_complete(graft_tree.out)
+        expand_hashmap(graft_tree.out, hashmap)
+        announce_tree_complete(expand_hashmap.out)
     emit:
         tree = graft_tree.out
 }
@@ -222,6 +253,7 @@ workflow build_split_grafted_veryfasttree {
     take:
         fasta
         metadata
+        hashmap
     main:
         split_fasta(fasta,metadata)
         if (params.webhook)
@@ -234,7 +266,8 @@ workflow build_split_grafted_veryfasttree {
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
         root_tree.out.trees.collect().set{ trees_ch }
         graft_tree(trees_ch, lineages_ch,"VFT")
-        announce_tree_complete(graft_tree.out)
+        expand_hashmap(graft_tree.out, hashmap)
+        announce_tree_complete(expand_hashmap.out)
     emit:
         tree = graft_tree.out
 }
@@ -242,6 +275,7 @@ workflow build_split_grafted_veryfasttree {
 workflow {
     fasta = file(params.unique_fasta)
     metadata = file(params.metadata)
+    hashmap = file(params.hashmap)
 
     build_split_grafted_veryfasttree(fasta,metadata)
 }

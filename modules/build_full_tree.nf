@@ -6,7 +6,7 @@ project_dir = projectDir
 publish_dev = file(params.publish_dev)
 
 
-process usher_tree {
+process usher_start_tree {
     /**
     * Makes usher mutation annotated tree
     * @input tree, metadata
@@ -14,6 +14,7 @@ process usher_tree {
     label 'retry_increasing_mem'
 
     publishDir "${publish_dev}", pattern: "trees/*.USH.tsv", mode: 'copy'
+    publishDir "${publish_dev}", pattern: "trees/*.pb", mode: 'copy'
 
     input:
     path tree
@@ -22,13 +23,49 @@ process usher_tree {
     output:
     path "trees/${tree.baseName}.USH.tree", emit: tree
     path "trees/parsimony-scores.USH.tsv", emit: scores
+    path "trees/${tree.baseName}.${params.date}.pb", emit: protobuf
 
     script:
     """
     faToVcf ${fasta} ${fasta.baseName}.vcf
     usher --tree ${tree} \
           --vcf ${fasta.baseName}.vcf \
-          --save-mutation-annotated-tree ${tree.baseName}.pb \
+          --save-mutation-annotated-tree ${tree.baseName}.${params.date}.pb \
+          --collapse-tree \
+          --write-parsimony-scores-per-node \
+          --write-uncondensed-final-tree \
+          --outdir trees
+    cp trees/uncondensed-final-tree.nh trees/${tree.baseName}.USH.tree
+    cp trees/parsimony-scores.tsv trees/parsimony-scores.USH.tsv
+    """
+}
+
+process usher_update_tree {
+    /**
+    * Makes usher mutation annotated tree
+    * @input tree, metadata
+    */
+    label 'retry_increasing_mem'
+
+    publishDir "${publish_dev}", pattern: "trees/*.USH.tsv", mode: 'copy'
+    publishDir "${publish_dev}", pattern: "trees/*.pb", mode: 'copy'
+
+
+    input:
+    path protobuf
+    path fasta
+
+    output:
+    path "trees/${tree.baseName}.USH.tree", emit: tree
+    path "trees/parsimony-scores.USH.tsv", emit: scores
+    path "${tree.baseName}.${params.date}.pb", emit: protobuf
+
+    script:
+    """
+    faToVcf ${fasta} ${fasta.baseName}.vcf
+    usher -i ${protobuf} -S \
+          --vcf ${fasta.baseName}.vcf \
+          --save-mutation-annotated-tree ${tree.baseName}.${params.date}.pb \
           --collapse-tree \
           --write-parsimony-scores-per-node \
           --write-uncondensed-final-tree \
@@ -99,12 +136,23 @@ workflow build_full_tree {
         fasta
         newick_tree
     main:
-        usher_tree(newick_tree,fasta)
-        root_tree(usher_tree.out.tree)
+        usher_start_tree(newick_tree,fasta)
+        root_tree(usher_start_tree.out.tree)
         announce_tree_complete(root_tree.out)
     emit:
         tree = root_tree.out
-        scores = usher_tree.out.scores
+}
+
+workflow update_full_tree {
+    take:
+        fasta
+        protobuf
+    main:
+        usher_update_tree(newick_tree,fasta)
+        root_tree(usher_update_tree.out.tree)
+        announce_tree_complete(root_tree.out)
+    emit:
+        tree = root_tree.out
 }
 
 workflow {

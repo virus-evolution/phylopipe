@@ -72,10 +72,8 @@ def num_unique(muts1, muts2):
 def should_downsample_row(row, downsample_date_excluded=True, downsample_included=False):
     if downsample_included and row["why_excluded"] in [None, "None", ""]:
         return True
-    if downsample_date_excluded and row["why_excluded"] not in [None, "None", ""]:
-        if row["why_excluded"].startswith("sample_date older than"):
-            return True
-        return False
+    if downsample_date_excluded and row["why_excluded"] in [None, "None", ""] and row["date_filtered"].startswith("sample_date older than"):
+        return True
     return False
 
 def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgroup_file, downsample_date_excluded, downsample_included):
@@ -143,10 +141,8 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
             for sample in samples:
                 if num_unique(muts, sample_dict[sample]) <= max_diff:
                     found_close_seq = True
-                    if not row["why_excluded"]:
-                        row["why_excluded"] = "downsampled with diff threshold %i" %max_diff
-                    else:
-                        row["why_excluded"] += ",downsampled with diff threshold %i" %max_diff
+                    #if not row["why_excluded"]:
+                    #    row["why_excluded"] = "downsampled with diff threshold %i" %max_diff
                     writer.writerow(row)
                     break
             if not found_close_seq:

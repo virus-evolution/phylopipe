@@ -5,32 +5,6 @@ nextflow.enable.dsl = 2
 project_dir = projectDir
 publish_dev = file(params.publish_dev)
 
-
-process expand_hashmap {
-    /**
-    * Adds back in identical sequences using hashmap
-    * @input tree, hashmap
-    */
-
-    input:
-    path tree
-    path hashmap
-
-    output:
-    path "${tree.baseName}.expanded.tree"
-
-    script:
-    """
-    jclusterfunk insert \
-        -i "${tree}" \
-        --metadata ${hashmap} \
-        --unique-only \
-        --ignore-missing \
-        --format newick \
-        -o "${tree.baseName}.expanded.tree"
-    """
-}
-
 process sort_and_collapse {
     /**
     * Runs gotree to collapse tiny branches
@@ -441,11 +415,9 @@ process announce_annotation_complete {
 workflow post_process_tree {
     take:
         tree
-        hashmap
         metadata
     main:
-        expand_hashmap(tree,hashmap)
-        sort_and_collapse(expand_hashmap.out)
+        sort_and_collapse(tree)
         annotate_tree(sort_and_collapse.out, metadata)
         deltran_ancestral_reconstruction(annotate_tree.out)
         label_deltran_introductions(deltran_ancestral_reconstruction.out)
@@ -481,8 +453,7 @@ workflow post_process_tree {
 
 workflow {
     tree = file(params.newick_tree)
-    hashmap = file(params.hashmap)
     metadata = file(params.metadata)
 
-    post_process_tree(tree,hashmap,metadata)
+    post_process_tree(tree,metadata)
 }

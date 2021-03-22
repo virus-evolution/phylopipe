@@ -6,9 +6,32 @@ project_dir = projectDir
 publish_dev = file(params.publish_dev)
 
 
+process mask_alignment {
+    /**
+    * Applies a mask to aligned FASTA
+    * @input alignment
+    * @output alignment_updated
+    * @params mask_file
+    */
+
+    input:
+    path alignment
+
+    output:
+    path "${alignment.baseName}.masked.fa"
+
+    script:
+    """
+    $project_dir/../bin/add_mask.py \
+      --in-alignment ${alignment} \
+      --out-alignment "${alignment.baseName}.masked.fa" \
+      --mask ${mask_file} \
+    """
+}
+
 process filter_uk {
     /**
-    * Filters UK sequences by metadata to exclude biosample duplicates and include only surveillance samples
+    * Filters UK sequences by metadata to exclude biosample duplicates
     * @input fasta, metadata
     */
 
@@ -98,6 +121,8 @@ process filter_on_sample_date {
             writer.writeheader()
 
             for row in reader:
+                row["date_filter"] = ""
+
                 if "why_excluded" not in row:
                     row["why_excluded"] = ""
 
@@ -113,7 +138,7 @@ process filter_on_sample_date {
                     continue
 
                 if (todays_date - window) > date:
-                    row["why_excluded"] = "sample_date older than %s days" %window
+                    row["date_filter"] = "sample_date older than %s days" %window
                     writer.writerow(row)
                     continue
 
@@ -199,13 +224,15 @@ workflow subsample_for_tree {
         fasta
         metadata
     main:
-        filter_uk(fasta, metadata)
+        mask_alignment(fasta)
+        filter_uk(mask_alignment.out, metadata)
         hash_non_unique_seqs(filter_uk.out.fasta, filter_uk.out.metadata)
         filter_on_sample_date(filter_uk.out.metadata)
         downsample(hash_non_unique_seqs.out.fasta, filter_on_sample_date.out)
         announce_summary(fasta, filter_uk.out.fasta, hash_non_unique_seqs.out.fasta, filter_on_sample_date.out, downsample.out.fasta)
     emit:
-        fasta = downsample.out.fasta
+        masked_deduped_fasta = filter_uk.out.fasta
+        fasta = downsample.out.fasta // subset of unique
         metadata = downsample.out.metadata
         hashmap = hash_non_unique_seqs.out.hashmap
         unique = hash_non_unique_seqs.out.fasta
