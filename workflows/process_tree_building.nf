@@ -26,7 +26,7 @@ workflow {
         ch_tree = Channel.fromPath(params.newick_tree)
         build_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_tree).set{ ch_full_tree }
     } else {
-        build_split_grafted_tree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata)
+        build_split_grafted_tree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata, subsample_for_tree.out.hashmap)
         build_full_tree(subsample_for_tree.out.masked_deduped_fasta, build_split_grafted_tree.out.tree).set{ ch_full_tree }
     }
     post_process_tree(ch_full_tree, subsample_for_tree.out.metadata)
