@@ -4,8 +4,7 @@ nextflow.enable.dsl = 2
 
 // import modules
 include { subsample_for_tree } from '../modules/subsample_for_tree.nf'
-include { build_split_grafted_veryfasttree } from '../modules/build_split_grafted_tree.nf'
-include { build_split_grafted_fasttree } from '../modules/build_split_grafted_tree.nf'
+include { build_split_grafted_tree } from '../modules/build_split_grafted_tree.nf'
 include { build_full_tree } from '../modules/build_full_tree.nf'
 include { post_process_tree } from '../modules/post_process_tree.nf'
 include { publish_trees } from '../modules/publish_trees.nf'
