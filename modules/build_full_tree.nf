@@ -23,14 +23,14 @@ process usher_start_tree {
     output:
     path "trees/${tree.baseName}.USH.tree", emit: tree
     path "trees/parsimony-scores.USH.tsv", emit: scores
-    path "trees/${tree.baseName}.${params.date}.pb", emit: protobuf
+    path "trees/${tree.baseName}.pb", emit: protobuf
 
     script:
     """
     faToVcf ${fasta} ${fasta.baseName}.vcf
     usher --tree ${tree} \
           --vcf ${fasta.baseName}.vcf \
-          --save-mutation-annotated-tree ${tree.baseName}.${params.date}.pb \
+          --save-mutation-annotated-tree ${tree.baseName}.pb \
           --collapse-tree \
           --write-parsimony-scores-per-node \
           --write-uncondensed-final-tree \
@@ -65,12 +65,12 @@ process usher_update_tree {
     faToVcf ${fasta} ${fasta.baseName}.vcf
     usher -i ${protobuf} -S \
           --vcf ${fasta.baseName}.vcf \
-          --save-mutation-annotated-tree ${tree.baseName}.${params.date}.pb \
+          --save-mutation-annotated-tree ${protobuf.baseName}.${params.date}.pb \
           --collapse-tree \
           --write-parsimony-scores-per-node \
           --write-uncondensed-final-tree \
           --outdir trees
-    cp trees/uncondensed-final-tree.nh trees/${tree.baseName}.USH.tree
+    cp trees/uncondensed-final-tree.nh trees/${protobuf.baseName}.USH.tree
     cp trees/parsimony-scores.tsv trees/parsimony-scores.USH.tsv
     """
 }
@@ -148,7 +148,7 @@ workflow update_full_tree {
         fasta
         protobuf
     main:
-        usher_update_tree(newick_tree,fasta)
+        usher_update_tree(protobuf,fasta)
         root_tree(usher_update_tree.out.tree)
         announce_tree_complete(root_tree.out)
     emit:

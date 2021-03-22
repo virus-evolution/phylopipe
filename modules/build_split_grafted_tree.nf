@@ -238,17 +238,18 @@ workflow build_split_grafted_tree {
         split_fasta.out.fasta.flatMap { f -> f }.map { f -> [f.baseName,f] }.set{ split_fasta_ch }
         Channel.from(lineage_splits).splitCsv(header: false, skip: 1).set{ split_outgroup_ch }
 
-        if ( params.tree_builder == "fasttree" )
+        if ( params.tree_builder == "fasttree" ) {
             fasttree(split_fasta_ch)
             fasttree.out.join(split_outgroup_ch).set{ unrooted_tree_ch }
             label_ch = Channel.from("FT")
-        else if ( params.tree_builder == "veryfasttree" )
+        } else if ( params.tree_builder == "veryfasttree" ) {
             veryfasttree(split_fasta_ch)
             veryfasttree.out.join(split_outgroup_ch).set{ unrooted_tree_ch }
             label_ch = Channel.from("VFT")
-        else
+        } else {
             println "Parameter tree_builder must be either fasttree or veryfasttree, not '${params.tree_builder}'"
             exit 1
+        }
 
         root_tree(unrooted_tree_ch)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
@@ -257,7 +258,7 @@ workflow build_split_grafted_tree {
         expand_hashmap(graft_tree.out, hashmap)
         announce_tree_complete(expand_hashmap.out)
     emit:
-        tree = graft_tree.out
+        tree = expand_hashmap.out
 }
 
 
@@ -266,5 +267,5 @@ workflow {
     metadata = file(params.metadata)
     hashmap = file(params.hashmap)
 
-    build_split_grafted_tree(fasta,metadata)
+    build_split_grafted_tree(fasta,metadata,hashmap)
 }

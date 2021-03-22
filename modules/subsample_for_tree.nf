@@ -61,7 +61,7 @@ process hash_non_unique_seqs {
     * Subsets a unique set of sequences
     * @input fasta, metadata
     */
-    memory { 20.GB  + 2.GB * task.attempt }
+    //memory { 20.GB  + 2.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 2
 
@@ -117,6 +117,7 @@ process filter_on_sample_date {
             fieldnames = reader.fieldnames
             if "why_excluded" not in reader.fieldnames:
                 fieldnames.append("why_excluded")
+            fieldnames.append("date_filter")
             writer = csv.DictWriter(csv_out, fieldnames = fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
             writer.writeheader()
 
@@ -218,6 +219,7 @@ process announce_summary {
 }
 
 lineage_splits = file(params.lineage_splits)
+mask_file = file(params.mask)
 
 workflow subsample_for_tree {
     take:

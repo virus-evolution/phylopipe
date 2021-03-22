@@ -72,7 +72,7 @@ def num_unique(muts1, muts2):
 def should_downsample_row(row, downsample_date_excluded=True, downsample_included=False):
     if downsample_included and row["why_excluded"] in [None, "None", ""]:
         return True
-    if downsample_date_excluded and row["why_excluded"] in [None, "None", ""] and row["date_filtered"].startswith("sample_date older than"):
+    if downsample_date_excluded and row["why_excluded"] in [None, "None", ""] and "date_filter" in row and row["date_filter"].startswith("sample_date older than"):
         return True
     return False
 
