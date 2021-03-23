@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV to write out')
     parser.add_argument('--include_true', required=False, nargs='+', default=[], help='List of CSV columns, include rows only if True')
     parser.add_argument('--exclude_true', required=False, nargs='+', default=[], help='List of CSV columns, exclude if True')
+    parser.add_argument('--reference', required=False, default="Wuhan/WH04/2020", help='STRING fasta header for reference')
 
     args = parser.parse_args()
     return args
@@ -43,7 +44,7 @@ def is_uk(row):
         return True
     return False
 
-def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, include_true, exclude_true):
+def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, include_true, exclude_true, reference):
     outgroups = parse_outgroups(outgroup_file)
     records = SeqIO.index(in_fasta, "fasta")
 
@@ -58,8 +59,15 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
         writer = csv.DictWriter(csv_out, fieldnames = fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
         writer.writeheader()
 
+        if reference in records:
+            out_fasta.write(">%s\n" %reference)
+            out_fasta.write("%s\n" %str(records[reference].seq))
+
         for row in reader:
             fasta_header = row["sequence_name"]
+            if fasta_header == reference:
+                writer.writerow(row)
+                continue
 
             if fasta_header in outgroups:
                 if "lineage" in reader.fieldnames:
@@ -107,7 +115,7 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
 
 def main():
     args = parse_args()
-    filter(args.in_fasta, args.in_metadata, args.outgroups, args.out_fasta, args.out_metadata, args.include_true, args.exclude_true)
+    filter(args.in_fasta, args.in_metadata, args.outgroups, args.out_fasta, args.out_metadata, args.include_true, args.exclude_true, args.reference)
 
 if __name__ == '__main__':
     main()
