@@ -18,7 +18,9 @@ workflow {
 
 
     subsample_for_tree(ch_fasta,ch_metadata)
-    if ( params.protobuf && params.newick_tree) {
+    if ( params.newick_tree && params.skip_usher) {
+        ch_full_tree = Channel.fromPath(params.newick_tree)
+    } else if ( params.protobuf && params.newick_tree) {
         ch_protobuf = Channel.fromPath(params.protobuf)
         ch_tree = Channel.fromPath(params.newick_tree)
         update_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_tree, ch_protobuf).set{ ch_full_tree }
@@ -27,7 +29,11 @@ workflow {
         build_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_tree).set{ ch_full_tree }
     } else {
         build_split_grafted_tree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata, subsample_for_tree.out.hashmap)
-        build_full_tree(subsample_for_tree.out.masked_deduped_fasta, build_split_grafted_tree.out.tree).set{ ch_full_tree }
+        if ( params.skip_usher ) {
+            ch_full_tree = build_split_grafted_tree.out.tree
+        } else {
+            build_full_tree(subsample_for_tree.out.masked_deduped_fasta, build_split_grafted_tree.out.tree).set{ ch_full_tree }
+        }
     }
     post_process_tree(ch_full_tree, subsample_for_tree.out.metadata)
     publish_trees(ch_fasta, post_process_tree.out.metadata, ch_variants, post_process_tree.out.newick_tree, post_process_tree.out.nexus_tree)
