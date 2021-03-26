@@ -43,7 +43,7 @@ process fetch_min_metadata {
     path metadata
 
     output:
-    path "cog_gisaid.fa", emit: fasta
+    path "cog_gisaid_min.fa", emit: fasta
     path "cog_gisaid_min.csv", emit: min_metadata
 
     script:
@@ -53,7 +53,7 @@ process fetch_min_metadata {
           --in-metadata ${metadata} \
           --index-column sequence_name \
           --filter-column sequence_name
-          --out-fasta "cog_gisaid.fa" \
+          --out-fasta "cog_gisaid_min.fa" \
           --out-metadata "cog_gisaid_min.csv" \
           --restrict --low-memory
     """
