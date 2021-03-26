@@ -5,22 +5,16 @@ channels:
   - defaults
   - cov-ert
 dependencies:
-  - biopython=1.74
-  - coreutils=8.25
-  - iqtree=1.6
+  - biopython>=1.74
   - mafft
-  - pip=19.3.1
-  - python=3.7.4
+  - pip
+  - python>=3.7
   - snakemake-minimal
   - fasttree
   - gotree
   - jclusterfunk
-  - r-base=3.5.1
-  - r-networkd3
-  - protobuf=3.12
-  - cmake>=3.10
-  - make
-  - boost-cpp
+  - ucsc-fatovcf
+  - usher
   - pip:
       - git+https://github.com/cov-ert/fastafunk.git
       - git+https://github.com/cov-ert/clusterfunk.git

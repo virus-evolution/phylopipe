@@ -18,10 +18,10 @@ workflow {
 
 
     subsample_for_tree(ch_fasta,ch_metadata)
-    if ( params.protobuf ) {
-        println "${params.protobuf}"
+    if ( params.protobuf && params.newick_tree) {
         ch_protobuf = Channel.fromPath(params.protobuf)
-        update_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_protobuf).set{ ch_full_tree }
+        ch_tree = Channel.fromPath(params.newick_tree)
+        update_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_tree, ch_protobuf).set{ ch_full_tree }
     } else if ( params.newick_tree ) {
         ch_tree = Channel.fromPath(params.newick_tree)
         build_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_tree).set{ ch_full_tree }
