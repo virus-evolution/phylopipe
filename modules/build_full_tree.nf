@@ -72,7 +72,7 @@ process fasta_to_vcf {
     * Makes VCF for usher
     * @input fasta
     */
-    //memory { 30.0.GB + 10.GB * task.attempt }
+    memory { 30.0.GB + 10.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 2
 
@@ -94,7 +94,7 @@ process usher_start_tree {
     * Makes usher mutation annotated tree
     * @input tree, vcf
     */
-    //memory { 30.0.GB + 10.GB * task.attempt }
+    memory { 30.0.GB + 10.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 1
     cpus 8
@@ -132,7 +132,7 @@ process usher_update_tree {
     */
 
     maxForks 1
-    //memory { 30.0.GB + 10.GB * task.attempt }
+    memory { 30.0.GB + 10.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries = 2
     cpus 8
