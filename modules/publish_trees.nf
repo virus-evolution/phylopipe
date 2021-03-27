@@ -52,7 +52,7 @@ process fetch_min_metadata {
           --in-fasta ${fasta} \
           --in-metadata ${metadata} \
           --index-column sequence_name \
-          --filter-column sequence_name
+          --filter-column sequence_name \
           --out-fasta "cog_gisaid_min.fa" \
           --out-metadata "cog_gisaid_min.csv" \
           --restrict --low-memory

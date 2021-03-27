@@ -130,7 +130,7 @@ process usher_update_tree {
     * Makes usher mutation annotated tree
     * @input tree, vcf
     */
-
+    publishDir "${publish_dev}", pattern: "trees/*.pb", mode: 'copy', overwrite: true
     maxForks 1
     memory { 30.0.GB + 10.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
