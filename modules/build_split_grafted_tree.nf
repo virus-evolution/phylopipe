@@ -69,6 +69,7 @@ process fasttree {
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 1
     cpus 3
+    time '2d'
 
     input:
     tuple val(lineage), path(lineage_fasta)
@@ -93,6 +94,7 @@ process veryfasttree {
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 1
     cpus 8
+    time '2d'
 
     input:
     tuple val(lineage), path(lineage_fasta)

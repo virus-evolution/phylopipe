@@ -99,16 +99,13 @@ process usher_start_tree {
     maxRetries = 1
     cpus 8
 
-    publishDir "${publish_dev}", pattern: "trees/*.USH.tsv", mode: 'copy'
-    publishDir "${publish_dev}", pattern: "trees/*.pb", mode: 'copy'
-
     input:
     path vcf
     path tree
 
     output:
     path "trees/${tree.baseName}.USH.tree", emit: tree
-    path "trees/${tree.baseName}.${params.date}.pb", emit: protobuf
+    path "trees/${tree.baseName}.pb", emit: protobuf
 
     script:
     """
@@ -116,7 +113,7 @@ process usher_start_tree {
     usher --tree ${tree} \
           --vcf ${vcf} \
           --threads ${task.cpus} \
-          --save-mutation-annotated-tree trees/${tree.baseName}.${params.date}.pb \
+          --save-mutation-annotated-tree trees/${tree.baseName}.pb \
           --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
@@ -130,7 +127,7 @@ process usher_update_tree {
     * Makes usher mutation annotated tree
     * @input tree, vcf
     */
-    publishDir "${publish_dev}", pattern: "trees/*.pb", mode: 'copy', overwrite: true
+    publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', overwrite: true
     maxForks 1
     memory { 30.0.GB + 10.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
@@ -151,12 +148,12 @@ process usher_update_tree {
     usher -i ${protobuf} \
           --vcf ${vcf} \
           --threads ${task.cpus} \
-          --save-mutation-annotated-tree ${protobuf.baseName}.${params.date}.pb \
+          --save-mutation-annotated-tree trees/${protobuf.baseName}.${params.date}.pb \
           --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
     if [ \$? -eq 0 ]; then
-        cp ${protobuf.baseName}.${params.date}.pb ${protobuf}
+        cp trees/${protobuf.baseName}.${params.date}.pb ${protobuf}
         cp trees/uncondensed-final-tree.nh trees/${protobuf.baseName}.USH.tree
     fi
     """
@@ -167,8 +164,6 @@ process root_tree {
     * Roots tree with WH04
     * @input tree
     */
-
-    publishDir "${publish_dev}", pattern: "trees/*.tree", mode: 'copy'
 
     input:
     path tree
