@@ -273,6 +273,7 @@ workflow finish_split_grafted_tree {
         root_tree(unrooted_trees)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
         root_tree.out.trees.collect().set{ trees_ch }
+        label_ch = Channel.from("FT")
         graft_tree(trees_ch, lineages_ch, label_ch)
         expand_hashmap(graft_tree.out, hashmap)
         announce_tree_complete(expand_hashmap.out)
