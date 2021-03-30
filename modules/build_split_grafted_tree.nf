@@ -268,8 +268,8 @@ workflow finish_split_grafted_tree {
         fasta
         metadata
         hashmap
-        unrooted_trees
     main:
+        unrooted_trees = Channel.fromPath( "${params.tree_dir}/*.tree" ).subscribe{ println "value: $it" }
         root_tree(unrooted_trees)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
         root_tree.out.trees.collect().set{ trees_ch }
@@ -288,8 +288,7 @@ workflow {
     hashmap = file(params.hashmap)
 
     if (params.tree_dir) {
-        trees = Channel.fromPath( "${params.tree_dir}/*.tree" )
-        finish_split_grafted_tree(fasta,metadata,hashmap,trees)
+        finish_split_grafted_tree(fasta,metadata,hashmap)
     } else {
         build_split_grafted_tree(fasta,metadata,hashmap)
     }
