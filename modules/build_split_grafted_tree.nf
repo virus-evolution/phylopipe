@@ -270,7 +270,7 @@ workflow finish_split_grafted_tree {
         hashmap
     main:
         Channel.from(lineage_splits).splitCsv(header: false, skip: 1).set{ split_outgroup_ch }
-        unrooted_trees = Channel.fromPath( "${params.tree_dir}/*.tree" )..flatMap { n -> [ ${n.simpleName}, n ] }subscribe{ println "value: $it" }
+        unrooted_trees = Channel.fromPath( "${params.tree_dir}/*.tree" ).flatMap { n -> [ ${n.simpleName}, n ] }subscribe{ println "value: $it" }
         unrooted_trees.join(split_outgroup_ch).set{ unrooted_tree_ch }
         root_tree(unrooted_tree_ch)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
