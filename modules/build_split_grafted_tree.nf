@@ -269,8 +269,10 @@ workflow finish_split_grafted_tree {
         metadata
         hashmap
     main:
-        unrooted_trees = Channel.fromPath( "${params.tree_dir}/*.tree" ).subscribe{ println "value: $it" }
-        root_tree(unrooted_trees)
+        Channel.from(lineage_splits).splitCsv(header: false, skip: 1).set{ split_outgroup_ch }
+        unrooted_trees = Channel.fromPath( "${params.tree_dir}/*.tree" )..flatMap { n -> [ ${n.simpleName}, n ] }subscribe{ println "value: $it" }
+        unrooted_trees.join(split_outgroup_ch).set{ unrooted_tree_ch }
+        root_tree(unrooted_tree_ch)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
         root_tree.out.trees.collect().set{ trees_ch }
         label_ch = Channel.from("FT")
