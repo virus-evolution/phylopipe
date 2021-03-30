@@ -263,11 +263,33 @@ workflow build_split_grafted_tree {
         tree = expand_hashmap.out
 }
 
+workflow finish_split_grafted_tree {
+    take:
+        fasta
+        metadata
+        hashmap
+        unrooted_trees
+    main:
+        root_tree(unrooted_trees)
+        root_tree.out.lineages.toSortedList().set{ lineages_ch }
+        root_tree.out.trees.collect().set{ trees_ch }
+        graft_tree(trees_ch, lineages_ch, label_ch)
+        expand_hashmap(graft_tree.out, hashmap)
+        announce_tree_complete(expand_hashmap.out)
+    emit:
+        tree = expand_hashmap.out
+}
+
 
 workflow {
     fasta = file(params.unique_fasta)
     metadata = file(params.metadata)
     hashmap = file(params.hashmap)
 
-    build_split_grafted_tree(fasta,metadata,hashmap)
+    if (params.tree_dir) {
+        trees = Channel.fromPath( "${params.tree_dir}/*.tree" )
+        finish_split_grafted_tree(fasta,metadata,hashmap,trees)
+    } else {
+        build_split_grafted_tree(fasta,metadata,hashmap)
+    }
 }
