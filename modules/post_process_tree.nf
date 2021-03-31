@@ -402,9 +402,9 @@ process announce_annotation_complete {
     script:
         if (params.webhook)
             """
-            echo "{{'text':'" > full_tree.json
+            echo '{{"text":"' > full_tree.json
             echo "*Phylopipe2.0: Hashmap expanded and annotated tree for ${params.date} complete*\\n" >> full_tree.json
-            echo "'}}" >> full_tree.json
+            echo '"}}' >> full_tree.json
 
             echo 'webhook ${params.webhook}'
 

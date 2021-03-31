@@ -61,7 +61,7 @@ process hash_non_unique_seqs {
     * Subsets a unique set of sequences
     * @input fasta, metadata
     */
-    memory { 20.GB  + 2.GB * task.attempt }
+    memory { 25.GB  + 2.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 2
 
@@ -199,14 +199,14 @@ process announce_summary {
     script:
         if (params.webhook)
             """
-            echo "{{'text':'" > announce.json
+            echo '{{"text":"' > announce.json
                 echo "*Phylopipe2.0: Subsampling ${params.date} for tree*\\n" >> announce.json
                 echo "> Number of sequences in COG and GISAID input files : \$(cat ${original} | grep '>' | wc -l)\\n" >> announce.json
                 echo "> Number of sequences after filtering uk sequences (deduplication by biosample id): \$(cat ${deduplicated} | grep '>' | wc -l)\\n" >> announce.json
                 echo "> Number of unique sequences : \$(cat ${unique} | grep '>' | wc -l)\\n" >> announce.json
                 echo "> Number of (non-unique) sequences with sample_date older than ${params.time_window} days: \$(cat ${filtered_on_sample_date} | grep 'sample_date older than' | wc -l)\\n" >> announce.json
                 echo "> Number of sequences after downsampling: \$(cat ${downsampled} | grep '>' | wc -l)\\n" >> announce.json
-                echo "'}}" >> announce.json
+                echo '"}}' >> announce.json
 
             echo 'webhook ${params.webhook}'
 

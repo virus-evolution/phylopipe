@@ -31,7 +31,7 @@ process split_fasta {
         --lineage-csv ${lineage_splits} \
         --aliases ${lineage_aliases}
 
-    echo "{{'text':'" > pre_tree.json
+    echo '{{"text":"' > pre_tree.json
     echo "*Phylopipe2.0: Ready for ${params.date} tree building*\\n" >> pre_tree.json
     num_lineages=\$(cat ${lineage_splits} | wc -l)
     range={\$num_lineages..1}
@@ -40,7 +40,7 @@ process split_fasta {
         line=\$(tail -n\$i .command.log | head -n1)
         echo ">\$line\\n" >> pre_tree.json
     done
-    echo "'}}" >> pre_tree.json
+    echo '"}}' >> pre_tree.json
     """
 }
 
@@ -138,7 +138,7 @@ process graft_tree {
     * Grafts lineages trees together
     * @input scions, lineages, guide_tree
     */
-    memory { 20.GB }
+    memory { 30.GB }
 
 
     input:
@@ -209,9 +209,9 @@ process announce_tree_complete {
     script:
         if (params.webhook)
             """
-            echo "{{'text':'" > grafted_tree.json
+            echo '{{"text":"' > grafted_tree.json
             echo "*Phylopipe2.0: Initial grafted tree for ${params.date} complete*\\n" >> grafted_tree.json
-            echo "'}}" >> grafted_tree.json
+            echo '"}}' >> grafted_tree.json
 
             echo 'webhook ${params.webhook}'
 
@@ -270,7 +270,7 @@ workflow finish_split_grafted_tree {
         hashmap
     main:
         Channel.from(lineage_splits).splitCsv(header: false, skip: 1).set{ split_outgroup_ch }
-        unrooted_trees = Channel.fromPath( "${params.tree_dir}/*.tree" ).map { n -> [ n.getBaseName().getBaseName(), n ] }.subscribe{ println "value: $it" }
+        unrooted_trees = Channel.fromPath( "${params.tree_dir}/*.tree" ).map { n -> [ n.getBaseName().replace(".unrooted",""), n ] }
         unrooted_trees.join(split_outgroup_ch).set{ unrooted_tree_ch }
         root_tree(unrooted_tree_ch)
         root_tree.out.lineages.toSortedList().set{ lineages_ch }
