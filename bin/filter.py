@@ -65,6 +65,9 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
 
         for row in reader:
             fasta_header = row["sequence_name"]
+            if "'" in fasta_header:
+                row["sequence_name"] = row["sequence_name"].replace("'","_")
+
             if fasta_header == reference:
                 writer.writerow(row)
                 continue
@@ -73,7 +76,7 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
                 if "lineage" in reader.fieldnames:
                     row["lineage"] = outgroups[fasta_header]
                 writer.writerow(row)
-                out_fasta.write(">%s\n" %fasta_header)
+                out_fasta.write(">%s\n" %row["sequence_name"])
                 out_fasta.write("%s\n" %str(records[fasta_header].seq))
                 continue
 
@@ -104,7 +107,7 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
                 continue
 
             if fasta_header in records:
-                out_fasta.write(">%s\n" %fasta_header)
+                out_fasta.write(">%s\n" %row["sequence_name"])
                 out_fasta.write("%s\n" %str(records[fasta_header].seq))
                 row["why_excluded"] = ""
                 writer.writerow(row)
