@@ -140,7 +140,7 @@ process usher_update_tree {
 
     output:
     path "trees/${protobuf.baseName}.USH.tree", emit: tree
-    path "*.pb", emit: protobuf
+    path "trees/*.pb", emit: protobuf
 
     script:
     """
@@ -197,9 +197,9 @@ process announce_tree_complete {
     script:
         if (params.webhook)
             """
-            echo '{{"text":"' > usher_tree.json
+            echo '{"text":"' > usher_tree.json
             echo "*Phylopipe2.0: Usher expanded tree for ${params.date} complete*\\n" >> usher_tree.json
-            echo '"}}' >> usher_tree.json
+            echo '"}' >> usher_tree.json
 
             echo 'webhook ${params.webhook}'
 
