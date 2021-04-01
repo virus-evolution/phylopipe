@@ -109,7 +109,7 @@ process publish_tree_recipes {
       --in-fasta ${fasta} \
       --min-metadata ${min_metadata} \
       --full-metadata ${metadata} \
-      --variants ${variants}
+      --variants ${variants} \
       --newick-tree ${newick_tree} \
       --nexus-tree ${nexus_tree} \
       --seed ${params.seed} \

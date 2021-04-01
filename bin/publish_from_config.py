@@ -21,8 +21,8 @@ def parse_args():
     parser.add_argument('--variants', dest = 'variants', required=False, help='Mutations CSV')
     parser.add_argument('--seed', dest = 'seed', required=False, help='If anonymize, use this random seed')
 
-    parse.add_argument('--newick-tree', dest = 'newick_tree', required=False, help='Newick tree')
-    parse.add_argument('--nexus-tree', dest = 'nexus_tree', required=False, help='Nexus tree')
+    parser.add_argument('--newick-tree', dest = 'newick_tree', required=False, help='Newick tree')
+    parser.add_argument('--nexus-tree', dest = 'nexus_tree', required=False, help='Nexus tree')
 
     parser.add_argument('--recipes', dest = 'recipes', required=True, help='JSON of recipes')
     parser.add_argument('--date', dest = 'date', required=True, help='Datestamp for published files')
@@ -40,11 +40,11 @@ def parse_args():
 #"anonymize": True or False to anonymize COG sequences e.g. for microreact
 #"seed": int, seed to use for anonymizing
 
-def get_info_from_config(config_dict, outdir, date, min_csv, full_csv, var_csv, tree_dict):
+def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv, var_csv, tree_dict):
     info_dict = {"suffix":None, "metadata_fields":None, "where": None,
-                 "mutations":False, "exclude_uk":False, "tree":None,
+                 "mutations":False, "exclude_uk":False, "tree":None, "fasta": None,
                  "anonymize":False, "date": date, "data": "cog_global",
-                 "in_fasta":None, "min_csv":None, "full_csv":None", in_var":None, "in_tree":None,
+                 "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_var":None, "in_tree":None,
                  "out_fasta":None, "out_csv":"tmp.csv", "out_var":"tmp_var.csv", "out_anon":None, "out_tree":None}
     info_dict.update(config_dict)
 
@@ -55,7 +55,7 @@ def get_info_from_config(config_dict, outdir, date, min_csv, full_csv, var_csv, 
     tree_start = "%s_tree" %start
     fasta_start = "%s_tree" %start
 
-    if info_dict["in_fasta"] or info_dict["tree"]:
+    if info_dict["fasta"] or info_dict["tree"]:
         start += "_metadata"
 
     if info_dict["suffix"]:
@@ -99,25 +99,25 @@ def syscall(cmd_list, allow_fail=False):
     print(completed_process.stdout)
     return completed_process
 
-def publish_file(outdir, info_dict):
+def publish_file(outdir, info_dict, seed):
     if info_dict["tree"] is not None and not info_dict["anonymize"]:
         cmd_list = ["cp", info_dict["in_tree"], info_dict["out_tree"]]
         syscall(cmd_list)
         return
 
     if info_dict["exclude_uk"]:
-        cmd_list = ["head -n1", info_dict["in_csv"], "> no_uk.csv"]
+        cmd_list = ["head -n1", info_dict["min_csv"], "> no_uk.csv"]
         syscall(cmd_list)
-        cmd_list = ["tail -n+2", info_dict["in_csv"], "| grep -v -E \"^England|^Northern_Ireland|^Wales|^Scotland\"", ">> no_uk.csv"]
+        cmd_list = ["tail -n+2", info_dict["min_csv"], "| grep -v -E \"^England|^Northern_Ireland|^Wales|^Scotland\"", ">> no_uk.csv"]
         syscall(cmd_list)
-        info_dict["in_csv"] = "no_uk.csv"
+        info_dict["min_csv"] = "no_uk.csv"
 
     if info_dict["uk_only"]:
-        cmd_list = ["head -n1", info_dict["in_csv"], "> uk_only.csv"]
+        cmd_list = ["head -n1", info_dict["min_csv"], "> uk_only.csv"]
         syscall(cmd_list)
-        cmd_list = ["tail -n+2", info_dict["in_csv"], "| grep -E \"^England|^Northern_Ireland|^Wales|^Scotland\"", ">> uk_only.csv"]
+        cmd_list = ["tail -n+2", info_dict["min_csv"], "| grep -E \"^England|^Northern_Ireland|^Wales|^Scotland\"", ">> uk_only.csv"]
         syscall(cmd_list)
-        info_dict["in_csv"] = "uk_only.csv"
+        info_dict["min_csv"] = "uk_only.csv"
 
     if info_dict["out_fasta"] is not None:
         cmd_list = ["fastafunk fetch --in-fasta", info_dict["in_fa"], "--in-metadata", info_dict["full_csv"],
@@ -133,7 +133,7 @@ def publish_file(outdir, info_dict):
         cmd_list = ["fastafunk add_columns --in-metadata", info_dict["min_csv"],
             "--in-data", info_dict["full_csv"], "--index-column sequence_name",
             "--join-on sequence_name --out-metadata", info_dict["out_csv"]]
-            syscall(cmd_list)
+        syscall(cmd_list)
         if info_dict["metadata_fields"]:
                 cmd_list.append("--new-columns")
                 cmd_list.extend(info_dict["metadata_fields"])
@@ -155,7 +155,8 @@ def publish_file(outdir, info_dict):
         anonymize_microreact(metadata_in = in_csv,
                              tree_in = info_dict["in_tree"],
                              metadata_out = info_dict["out_anon"],
-                             tree_out = info_dict["out_tree"])
+                             tree_out = info_dict["out_tree"],
+                             seed = seed)
 
     #tmp = glob.glob("tmp.*")
     #if len(tmp) > 0:
@@ -178,8 +179,8 @@ def main():
     for outdir in recipes.keys():
         os.makedirs(outdir,exist_ok=True)
         for recipe in recipes[outdir]:
-            info_dict = get_info_from_config(recipe, outdir, args.date, args.min_csv, args.full_csv, args.var_csv, tree_dict)
-            publish_file(outdir, info_dict)
+            info_dict = get_info_from_config(recipe, outdir, args.date, args.fasta, args.min_metadata, args.full_metadata, args.variants, tree_dict)
+            publish_file(outdir, info_dict, args.seed)
 
 if __name__ == '__main__':
     main()
