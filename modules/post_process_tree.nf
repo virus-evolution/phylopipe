@@ -253,7 +253,7 @@ process dequote_tree {
     * @input tree
     */
 
-    publishDir "${publish_dev}", pattern: "*.tree", mode: 'copy', saveAs: 'cog_global.${params.date}.newick', overwrite: true
+    publishDir "${publish_dev}", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.newick" }, overwrite: true
 
     input:
     path tree
@@ -366,7 +366,7 @@ process annotate_tree_phylotype {
     * Adds metadata annotations to tree
     * @input tree, metadata
     */
-    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy', saveAs: 'cog_global.${params.date}.nexus', overwrite: true
+    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.nexus" }, overwrite: true
 
 
     input:

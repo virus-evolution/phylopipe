@@ -181,6 +181,7 @@ workflow publish_trees {
                                     .combine(variants)
                                     .combine(newick_tree)
                                     .combine(nexus_tree)
+                                    .combine(recipe_ch)
                                     .set{ publish_input_ch }
         publish_tree_recipes(publish_input_ch)
         outputs_ch = publish_tree_recipes.out.all.collect()
