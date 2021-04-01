@@ -13,7 +13,9 @@ def get_random_name():
     return(anonymous_name)
 
 
-def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out):
+def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
+    if seed:
+        random.seed(seed)
 
     metadata_list = []
     with open(metadata_in, 'r', newline = '') as csvfile:
@@ -127,10 +129,8 @@ if __name__ == "__main__":
                          metavar='N')
     args = parser.parse_args()
 
-    if args.seed:
-        random.seed(args.seed)
-
     anonymize_microreact(metadata_in = args.metadata_in,
                          tree_in = args.tree_in,
                          metadata_out = args.metadata_out,
-                         tree_out = args.tree_out)
+                         tree_out = args.tree_out,
+                         seed = args.seed)

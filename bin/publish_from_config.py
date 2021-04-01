@@ -42,9 +42,9 @@ def parse_args():
 
 def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv, var_csv, tree_dict):
     info_dict = {"suffix":None, "metadata_fields":None, "where": None,
-                 "mutations":False, "exclude_uk":False, "tree":None, "fasta": None,
+                 "mutations":False, "exclude_uk":False, "uk_only": False, "tree":None, "fasta": None,
                  "anonymize":False, "date": date, "data": "cog_global",
-                 "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_var":None, "in_tree":None,
+                 "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_var":var_csv, "in_tree":None,
                  "out_fasta":None, "out_csv":"tmp.csv", "out_var":"tmp_var.csv", "out_anon":None, "out_tree":None}
     info_dict.update(config_dict)
 
@@ -103,6 +103,8 @@ def publish_file(outdir, info_dict, seed):
     if info_dict["tree"] is not None and not info_dict["anonymize"]:
         cmd_list = ["cp", info_dict["in_tree"], info_dict["out_tree"]]
         syscall(cmd_list)
+
+    if info_dict["metadata_fields"] is None:
         return
 
     if info_dict["exclude_uk"]:
@@ -179,7 +181,7 @@ def main():
     for outdir in recipes.keys():
         os.makedirs(outdir,exist_ok=True)
         for recipe in recipes[outdir]:
-            info_dict = get_info_from_config(recipe, outdir, args.date, args.fasta, args.min_metadata, args.full_metadata, args.variants, tree_dict)
+            info_dict = get_info_from_config(recipe, outdir, args.date, args.in_fasta, args.min_metadata, args.full_metadata, args.variants, tree_dict)
             publish_file(outdir, info_dict, args.seed)
 
 if __name__ == '__main__':
