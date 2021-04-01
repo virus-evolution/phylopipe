@@ -45,7 +45,7 @@ def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv,
                  "mutations":False, "exclude_uk":False, "uk_only": False, "tree":None, "fasta": None,
                  "anonymize":False, "date": date, "data": "cog_global",
                  "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_var":var_csv, "in_tree":None,
-                 "out_fasta":None, "out_csv":"tmp.csv", "out_var":"tmp_var.csv", "out_anon":None, "out_tree":None}
+                 "out_fa":None, "out_csv":"tmp.csv", "out_var":"tmp_var.csv", "out_anon":None, "out_tree":None}
     info_dict.update(config_dict)
 
     if info_dict["tree"] in tree_dict.keys():
@@ -68,7 +68,7 @@ def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv,
         info_dict["out_tree"] = "%s.%s" %(tree_start, info_dict["tree"])
 
     if info_dict["fasta"]:
-        info_dict["out_fasta"] = "%s.fasta" %fasta_start
+        info_dict["out_fa"] = "%s.fasta" %fasta_start
 
     csv_end = ".csv"
     if info_dict["anonymize"]:
@@ -121,7 +121,7 @@ def publish_file(outdir, info_dict, seed):
         syscall(cmd_list)
         info_dict["min_csv"] = "uk_only.csv"
 
-    if info_dict["out_fasta"] is not None:
+    if info_dict["out_fa"] is not None:
         cmd_list = ["fastafunk fetch --in-fasta", info_dict["in_fa"], "--in-metadata", info_dict["full_csv"],
                   "--index-column sequence_name --out-fasta", info_dict["out_fa"],
                   "--out-metadata", info_dict["out_csv"], "--restrict --low-memory --keep-omit-rows"]

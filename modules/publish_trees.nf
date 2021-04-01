@@ -100,8 +100,9 @@ process publish_tree_recipes {
     tuple path(fasta),path(min_metadata),path(metadata),path(variants),path(newick_tree),path(nexus_tree),path(recipe)
 
     output:
-    path "*/cog_*.*", emit: all
+    path "${recipe.baseName}.done.txt", emit: flag
     path "public/cog_*_tree.newick", optional: true, emit: tree
+    path "*/cog_*.*", emit: all
 
     script:
     """
@@ -115,6 +116,7 @@ process publish_tree_recipes {
       --seed ${params.seed} \
       --recipes ${recipe} \
       --date ${params.date}
+    touch "${recipe.baseName}.done.txt"
     """
 }
 
@@ -184,7 +186,7 @@ workflow publish_trees {
                                     .combine(recipe_ch)
                                     .set{ publish_input_ch }
         publish_tree_recipes(publish_input_ch)
-        outputs_ch = publish_tree_recipes.out.all.collect()
+        outputs_ch = publish_tree_recipes.out.flag.collect()
         announce_to_webhook(outputs_ch, "Phylopipe2.0")
         //publish_s3(publish_tree_recipes.out.tree)
     emit:
