@@ -253,7 +253,7 @@ process dequote_tree {
     * @input tree
     */
 
-    publishDir "${publish_dev}", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.newick" }, overwrite: true
+    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.newick" }, overwrite: true
 
     input:
     path tree

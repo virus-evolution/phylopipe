@@ -19,7 +19,7 @@
         "primary_uk_lineage"
       ],
       "mutations": true,
-      "where": "primary_uk_lineage=microreact_lineage"
+      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK"
     },
     {
       "suffix": "private",
@@ -41,7 +41,7 @@
         "primary_uk_lineage"
       ],
       "mutations": true,
-      "where": "primary_uk_lineage=microreact_lineage"
+      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK"
     }
   ],
   "metadata": [
@@ -67,7 +67,7 @@
         "del_introduction",
         "phylotype"
       ],
-      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id adm1=adm1_UK"
+      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id"
     },
     {
       "suffix": "consortium",
@@ -111,7 +111,7 @@
         "del_introduction",
         "phylotype"
       ],
-      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id",
+      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id adm1=adm1_UK",
       "mutations": true
     }
   ],
@@ -137,7 +137,7 @@
         "del_introduction",
         "phylotype"
       ],
-      "where": "gisaid_id=covv_accession_id"
+      "where": "gisaid_id=covv_accession_id adm1=adm1_UK"
     },
     {
       "tree": "newick"
