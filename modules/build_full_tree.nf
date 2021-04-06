@@ -114,6 +114,8 @@ process usher_start_tree {
           --vcf ${vcf} \
           --threads ${task.cpus} \
           --save-mutation-annotated-tree trees/${tree.baseName}.pb \
+          --max-uncertainty-per-sample ${params.max_parsimony_placements} \
+          --retain-input-branch-lengths \
           --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
@@ -129,7 +131,7 @@ process usher_update_tree {
     */
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     maxForks 1
-    memory { 30.0.GB + 10.GB * task.attempt }
+    memory { 50.0.GB + 10.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries = 2
     cpus 8
@@ -149,6 +151,8 @@ process usher_update_tree {
           --vcf ${vcf} \
           --threads ${task.cpus} \
           --save-mutation-annotated-tree trees/${protobuf.baseName}.${params.date}.pb \
+          --max-uncertainty-per-sample ${params.max_parsimony_placements} \
+          --retain-input-branch-lengths \
           --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
