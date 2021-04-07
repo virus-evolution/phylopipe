@@ -19,6 +19,7 @@ workflow {
 
     if ( params.protobuf || params.newick_tree ) {
         mask_and_filter(ch_fasta,ch_metadata)
+        mask_and_filter.out.masked_deduped_fasta.set{ ch_preprocessed_fasta }
         mask_and_filter.out.metadata.set{ ch_preprocessed_metadata }
     }
 
@@ -27,10 +28,10 @@ workflow {
     } else if ( params.protobuf && params.newick_tree) {
         ch_protobuf = Channel.fromPath(params.protobuf)
         ch_tree = Channel.fromPath(params.newick_tree)
-        update_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_tree, ch_protobuf).set{ ch_full_tree }
+        update_full_tree(ch_preprocessed_fasta, ch_tree, ch_protobuf).set{ ch_full_tree }
     } else if ( params.newick_tree ) {
         ch_tree = Channel.fromPath(params.newick_tree)
-        build_full_tree(subsample_for_tree.out.masked_deduped_fasta, ch_tree).set{ ch_full_tree }
+        build_full_tree(ch_preprocessed_fasta, ch_tree).set{ ch_full_tree }
     } else {
         subsample_for_tree(ch_fasta,ch_metadata)
         subsample_for_tree.out.metadata.set{ ch_preprocessed_metadata }
