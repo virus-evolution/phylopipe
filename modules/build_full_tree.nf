@@ -43,6 +43,7 @@ process clean_fasta_headers {
           --out-fasta "${fasta.baseName}.clean.fa" \
           --out-metadata "${fasta.baseName}.map.csv"
     """
+}
 
 process clean_fasta_headers_with_tree {
     /**
@@ -68,6 +69,7 @@ process clean_fasta_headers_with_tree {
           --out-metadata "${fasta.baseName}.map.csv" \
           --out-tree "${tree.baseName}.clean.tree"
     """
+}
 
 process extract_tips_fasta {
     /**
