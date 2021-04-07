@@ -221,6 +221,18 @@ process announce_summary {
 lineage_splits = file(params.lineage_splits)
 mask_file = file(params.mask)
 
+workflow mask_and_filter {
+    take:
+        fasta
+        metadata
+    main:
+        mask_alignment(fasta)
+        filter_uk(mask_alignment.out, metadata)
+    emit:
+        masked_deduped_fasta = filter_uk.out.fasta
+        metadata = filter_uk.out.metadata
+}
+
 workflow subsample_for_tree {
     take:
         fasta
@@ -239,6 +251,7 @@ workflow subsample_for_tree {
         hashmap = hash_non_unique_seqs.out.hashmap
         unique = hash_non_unique_seqs.out.fasta
 }
+
 
 
 workflow {
