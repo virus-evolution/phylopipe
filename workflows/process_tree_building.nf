@@ -4,6 +4,7 @@ nextflow.enable.dsl = 2
 
 // import modules
 include { subsample_for_tree } from '../modules/subsample_for_tree.nf'
+include { mask_and_filter } from '../modules/subsample_for_tree.nf'
 include { build_split_grafted_tree } from '../modules/build_split_grafted_tree.nf'
 include { build_full_tree } from '../modules/build_full_tree.nf'
 include { update_full_tree } from '../modules/build_full_tree.nf'
