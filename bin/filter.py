@@ -50,7 +50,7 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
 
     with open(in_metadata, 'r') as csv_in, \
         open(out_metadata, 'w') as csv_out, \
-        open(out_fasta, 'w') as out_fasta:
+        open(out_fasta, 'w') as fa_out:
 
         reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
         fieldnames = reader.fieldnames
@@ -60,8 +60,8 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
         writer.writeheader()
 
         if reference in records:
-            out_fasta.write(">%s\n" %reference)
-            out_fasta.write("%s\n" %str(records[reference].seq))
+            fa_out.write(">%s\n" %reference)
+            fa_out.write("%s\n" %str(records[reference].seq))
 
         for row in reader:
             fasta_header = row["sequence_name"]
@@ -76,8 +76,8 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
                 if "lineage" in reader.fieldnames:
                     row["lineage"] = outgroups[fasta_header]
                 writer.writerow(row)
-                out_fasta.write(">%s\n" %row["sequence_name"])
-                out_fasta.write("%s\n" %str(records[fasta_header].seq))
+                fa_out.write(">%s\n" %row["sequence_name"])
+                fa_out.write("%s\n" %str(records[fasta_header].seq))
                 continue
 
             if "why_excluded" in reader.fieldnames and row["why_excluded"] not in [None, "None", ""]:
@@ -107,8 +107,8 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
                 continue
 
             if fasta_header in records:
-                out_fasta.write(">%s\n" %row["sequence_name"])
-                out_fasta.write("%s\n" %str(records[fasta_header].seq))
+                fa_out.write(">%s\n" %row["sequence_name"])
+                fa_out.write("%s\n" %str(records[fasta_header].seq))
                 row["why_excluded"] = ""
                 writer.writerow(row)
             else:

@@ -23,6 +23,52 @@ process dequote_tree {
     """
 }
 
+process clean_fasta_headers {
+    /**
+    * Cleans up strings in FASTA
+    * @input fastas
+    */
+
+    input:
+    path fasta
+
+    output:
+    path "${fasta.baseName}.clean.fa"
+    path "${fasta.baseName}.map.csv"
+
+    script:
+    """
+    $project_dir/../bin/remove_dodgy_symbols.py \
+          --in-fasta ${fasta} \
+          --out-fasta "${fasta.baseName}.clean.fa" \
+          --out-metadata "${fasta.baseName}.map.csv"
+    """
+
+process clean_fasta_headers_with_tree {
+    /**
+    * Cleans up strings in FASTA
+    * @input fastas
+    */
+
+    input:
+    path fasta
+    path tree
+
+    output:
+    path "${fasta.baseName}.clean.fa"
+    path "${fasta.baseName}.map.csv"
+    path "${tree.baseName}.clean.tree"
+
+    script:
+    """
+    $project_dir/../bin/remove_dodgy_symbols.py \
+          --in-fasta ${fasta} \
+          --in-tree ${tree} \
+          --out-fasta "${fasta.baseName}.clean.fa" \
+          --out-metadata "${fasta.baseName}.map.csv" \
+          --out-tree "${tree.baseName}.clean.tree"
+    """
+
 process extract_tips_fasta {
     /**
     * Extracts fasta corresponding to tips in the tree
@@ -239,10 +285,11 @@ workflow build_full_tree {
         newick_tree
     main:
         dequote_tree(newick_tree)
-        extract_tips_fasta(fasta, dequote_tree.out)
+        clean_fasta_headers_with_tree(fasta, dequote_tree.out)
+        extract_tips_fasta(clean_fasta_headers_with_tree.out.fasta, clean_fasta_headers_with_tree.out.tree)
         add_reference_to_fasta(extract_tips_fasta.out.fasta)
         fasta_to_vcf(add_reference_to_fasta.out)
-        usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
+        usher_start_tree(fasta_to_vcf.out,clean_fasta_headers_with_tree.out.tree)
         iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf)
         root_tree(iteratively_update_tree.out.tree)
         announce_tree_complete(root_tree.out)
@@ -257,7 +304,8 @@ workflow update_full_tree {
         protobuf
     main:
         dequote_tree(newick_tree)
-        extract_tips_fasta(fasta, dequote_tree.out)
+        clean_fasta_headers_with_tree(fasta, dequote_tree.out)
+        extract_tips_fasta(clean_fasta_headers_with_tree.out.fasta, clean_fasta_headers_with_tree.out.tree)
         iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf)
         root_tree(iteratively_update_tree.out.tree)
         announce_tree_complete(root_tree.out)
