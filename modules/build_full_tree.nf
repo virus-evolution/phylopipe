@@ -33,8 +33,8 @@ process clean_fasta_headers {
     path fasta
 
     output:
-    path "${fasta.baseName}.clean.fa"
-    path "${fasta.baseName}.map.csv"
+    path "${fasta.baseName}.clean.fa", emit: fasta
+    path "${fasta.baseName}.map.csv", emit: map
 
     script:
     """
@@ -56,9 +56,9 @@ process clean_fasta_headers_with_tree {
     path tree
 
     output:
-    path "${fasta.baseName}.clean.fa"
-    path "${fasta.baseName}.map.csv"
-    path "${tree.baseName}.clean.tree"
+    path "${fasta.baseName}.clean.fa", emit: fasta
+    path "${fasta.baseName}.map.csv", emit: map
+    path "${tree.baseName}.clean.tree", emit: tree
 
     script:
     """
