@@ -242,12 +242,19 @@ workflow subsample_for_tree {
         filter_uk(mask_alignment.out, metadata)
         hash_non_unique_seqs(filter_uk.out.fasta, filter_uk.out.metadata)
         filter_on_sample_date(filter_uk.out.metadata)
-        downsample(hash_non_unique_seqs.out.fasta, filter_on_sample_date.out)
-        announce_summary(fasta, filter_uk.out.fasta, hash_non_unique_seqs.out.fasta, filter_on_sample_date.out, downsample.out.fasta)
+        if (params.downsample) {
+            downsample(hash_non_unique_seqs.out.fasta, filter_on_sample_date.out)
+            down_fasta = downsample.out.fasta
+            down_metadata = downsample.out.metadata
+        } else {
+            down_fasta = hash_non_unique_seqs.out.fasta
+            down_metadata = filter_on_sample_date.out
+        }
+        announce_summary(fasta, filter_uk.out.fasta, hash_non_unique_seqs.out.fasta, filter_on_sample_date.out, down_fasta)
     emit:
         masked_deduped_fasta = filter_uk.out.fasta
-        fasta = downsample.out.fasta // subset of unique
-        metadata = downsample.out.metadata
+        fasta = down_fasta // subset of unique
+        metadata = down_metadata
         hashmap = hash_non_unique_seqs.out.hashmap
         unique = hash_non_unique_seqs.out.fasta
 }

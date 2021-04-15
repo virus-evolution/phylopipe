@@ -92,7 +92,8 @@ process extract_tips_fasta {
         --in-fasta ${fasta} \
         --in-tree ${tree} \
         --out-fasta "${fasta.baseName}.tips.fasta" \
-        --reject-fasta "${fasta.baseName}.new.fasta"
+        --reject-fasta "${fasta.baseName}.new.fasta" \
+        --low-memory
     """
 }
 
@@ -305,7 +306,6 @@ workflow update_full_tree {
         newick_tree
         protobuf
     main:
-        dequote_tree(newick_tree)
         clean_fasta_headers_with_tree(fasta, newick_tree)
         dequote_tree(clean_fasta_headers_with_tree.out.tree)
         extract_tips_fasta(clean_fasta_headers_with_tree.out.fasta, dequote_tree.out)
