@@ -174,7 +174,7 @@ workflow publish_trees {
         newick_tree
         nexus_tree
     main:
-        publish_master_metadata(metadata,"cog_gisaid")
+        publish_master_metadata(metadata,params.category)
         fetch_min_metadata(fasta,metadata)
         split_recipes(publish_recipes)
         recipe_ch = split_recipes.out.flatten()

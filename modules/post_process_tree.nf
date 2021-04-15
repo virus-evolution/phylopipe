@@ -24,7 +24,7 @@ process sort_and_collapse {
     """
 }
 
-process annotate_tree {
+process annotate_tree_uk {
     /**
     * Adds metadata annotations to tree
     * @input tree, metadata
@@ -416,14 +416,40 @@ process announce_annotation_complete {
            """
 }
 
-workflow post_process_tree {
+
+process annotate_tree {
+    /**
+    * Adds metadata annotations to tree
+    * @input tree, metadata
+    */
+
+    input:
+    path tree
+    path metadata
+
+    output:
+    path "annotated.tree"
+
+    script:
+    """
+    jclusterfunk annotate \
+      -i ${tree} \
+      -c sequence_name \
+      -m ${metadata} \
+      --tip-attributes country sample_date lineage covv_accession_id\
+      -o "annotated.tree" \
+      --ignore-missing
+    """
+}
+
+
+workflow get_cog_uk_phylotypes {
     take:
         tree
         metadata
     main:
-        sort_and_collapse(tree)
-        annotate_tree(sort_and_collapse.out, metadata)
-        deltran_ancestral_reconstruction(annotate_tree.out)
+        annotate_tree_uk(tree, metadata)
+        deltran_ancestral_reconstruction(annotate_tree_uk.out)
         label_deltran_introductions(deltran_ancestral_reconstruction.out)
         merge_sibling_del_introduction(label_deltran_introductions.out)
         output_annotations(merge_sibling_del_introduction.out)
@@ -438,7 +464,7 @@ workflow post_process_tree {
                           .collectFile() { item -> [ "${item[1]}.txt", "${item[0]}" + '\n' ] }
                           .filter { it.countLines() > 2 }
                           .set{ uk_lineages_ch }
-        dequote_tree(sort_and_collapse.out)
+        dequote_tree(tree)
         cut_out_tree(dequote_tree.out, uk_lineages_ch)
         phylotype_cut_tree(cut_out_tree.out)
         get_uk_phylotypes_csv(phylotype_cut_tree.out)
@@ -446,13 +472,36 @@ workflow post_process_tree {
                                  .set{ uk_phylotypes_csv }
         update_metadata_with_phylotypes(update_uk_lineage_metadata.out,uk_phylotypes_csv)
         annotate_tree_phylotype(annotate_tree_uk_lineage.out, update_metadata_with_phylotypes.out)
-        announce_annotation_complete(annotate_tree_phylotype.out)
     emit:
         nexus_tree = annotate_tree_phylotype.out
         metadata = update_metadata_with_phylotypes.out
         newick_tree = dequote_tree.out
-        //nexus_tree = annotate_tree_uk_lineage.out
-        //metadata = update_uk_lineage_metadata.out
+}
+
+
+workflow post_process_tree {
+    take:
+        tree
+        metadata
+    main:
+        sort_and_collapse(tree)
+        if ( params.cog_uk ) {
+           get_cog_uk_phylotypes(sort_and_collapse.out, metadata)
+           nexus_ch = get_cog_uk_phylotypes.out.nexus_tree
+           newick_ch = get_cog_uk_phylotypes.out.newick_tree
+           metadata_ch = get_cog_uk_phylotypes.out.metadata
+        } else {
+           annotate_tree(sort_and_collapse.out, metadata)
+           nexus_ch = annotate_tree.out
+           newick_ch = sort_and_collapse.out
+           metadata_ch = metadata
+
+        }
+        announce_annotation_complete(nexus_ch)
+    emit:
+        nexus_tree = nexus_ch
+        metadata = metadata_ch
+        newick_tree = newick_ch
 }
 
 workflow {

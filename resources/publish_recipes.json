@@ -111,7 +111,7 @@
         "del_introduction",
         "phylotype"
       ],
-      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id adm1=adm1_UK",
+      "where": "gisaid_id=covv_accession_id cog_id=central_sample_id",
       "mutations": true
     }
   ],
