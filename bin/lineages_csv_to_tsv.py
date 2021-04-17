@@ -20,12 +20,12 @@ def convert(in_csv, out_tsv):
     with open(in_csv, "r") as csv_in, open(out_tsv, "r") as tsv_out:
         line = csv_in.readline()
         while line:
-            line = csv_in.readline()
             try:
                 taxon,lineage = line.strip().split(",")
                 tsv_out.write("%s\t%s\n" % (lineage, taxon))
             except:
                 continue
+            line = csv_in.readline()
 
 def main():
     args = parse_args()
