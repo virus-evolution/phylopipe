@@ -32,7 +32,7 @@ process split_fasta {
         --aliases ${lineage_aliases}
 
     echo '{"text":"' > pre_tree.json
-    echo "*Phylopipe2.0: Ready for ${params.date} tree building*\\n" >> pre_tree.json
+    echo "*${params.whoami}: Ready for ${params.date} tree building*\\n" >> pre_tree.json
     num_lineages=\$(cat ${lineage_splits} | wc -l)
     range={\$num_lineages..1}
     for i in \$(eval echo \${range})
@@ -69,7 +69,6 @@ process fasttree {
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 1
     cpus 3
-    time '2d'
 
     input:
     tuple val(lineage), path(lineage_fasta)
@@ -210,7 +209,7 @@ process announce_tree_complete {
         if (params.webhook)
             """
             echo '{"text":"' > grafted_tree.json
-            echo "*Phylopipe2.0: Initial grafted tree for ${params.date} complete*\\n" >> grafted_tree.json
+            echo "*${params.whoami}: Initial grafted tree for ${params.date} complete*\\n" >> grafted_tree.json
             echo '"}' >> grafted_tree.json
 
             echo 'webhook ${params.webhook}'

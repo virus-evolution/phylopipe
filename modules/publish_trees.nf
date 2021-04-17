@@ -187,7 +187,7 @@ workflow publish_trees {
                                     .set{ publish_input_ch }
         publish_tree_recipes(publish_input_ch)
         outputs_ch = publish_tree_recipes.out.flag.collect()
-        announce_to_webhook(outputs_ch, "Phylopipe2.0")
+        announce_to_webhook(outputs_ch, "${params.whoami}")
         //publish_s3(publish_tree_recipes.out.tree)
     emit:
         published = outputs_ch

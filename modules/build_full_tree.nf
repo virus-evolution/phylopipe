@@ -251,7 +251,7 @@ process announce_tree_complete {
         if (params.webhook)
             """
             echo '{"text":"' > usher_tree.json
-            echo "*Phylopipe2.0: Usher expanded tree for ${params.date} complete*\\n" >> usher_tree.json
+            echo "*${params.whoami}: Usher expanded tree for ${params.date} complete*\\n" >> usher_tree.json
             echo '"}' >> usher_tree.json
 
             echo 'webhook ${params.webhook}'
