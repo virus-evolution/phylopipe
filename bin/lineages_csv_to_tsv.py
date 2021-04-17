@@ -13,7 +13,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def convert(in_csv, out_csv):
+def convert(in_csv, out_tsv):
     """
     input is CSV, last column being the representative outgroups:
     """
