@@ -8,7 +8,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="""Filter UK sequences based on metadata""",
                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--in-csv', dest = 'in_csv', required=True, help='CSV of taxon,lineage')
-    parser.add_argument('--out_tsv', dest = 'out_csv', required=True, help='TSV for usher pangolin')
+    parser.add_argument('--out-tsv', dest = 'out_tsv', required=True, help='TSV for usher pangolin')
 
     args = parser.parse_args()
     return args
