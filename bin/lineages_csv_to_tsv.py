@@ -17,7 +17,7 @@ def convert(in_csv, out_tsv):
     """
     input is CSV, last column being the representative outgroups:
     """
-    with open(in_csv, "r") as csv_in, open(out_tsv, "r") as tsv_out:
+    with open(in_csv, "r") as csv_in, open(out_tsv, "w") as tsv_out:
         line = csv_in.readline()
         while line:
             line = csv_in.readline()

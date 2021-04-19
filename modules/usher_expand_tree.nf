@@ -350,6 +350,36 @@ process announce_tree_complete {
            """
 }
 
+
+process announce_protobuf_complete {
+    /**
+    * Announces usher updated tree
+    * @input protobuf
+    */
+
+    input:
+    path protobuf
+
+    output:
+    path "usher_pb.json"
+
+    script:
+        if (params.webhook)
+            """
+            echo '{"text":"' > usher_pb.json
+            echo "*${params.whoami}: Usher protobuf for ${params.date} complete*\\n" >> usher_pb.json
+            echo '"}' >> usher_pb.json
+
+            echo 'webhook ${params.webhook}'
+
+            curl -X POST -H "Content-type: application/json" -d @usher_pb.json ${params.webhook}
+            """
+        else
+           """
+           touch "usher_pb.json"
+           """
+}
+
 reference = file(params.reference_fasta)
 
 workflow iteratively_update_tree {
@@ -446,15 +476,19 @@ workflow build_protobuf {
         fasta
         newick_tree
     main:
-        clean_fasta_headers_with_tree(fasta, newick_tree)
+        if (! params.lineage_designations ) {
+            println(" Lineage designations is required")
+        }
+        lineage_designations = file( params.lineage_designations )
+        extract_protected_fasta( fasta, lineage_designations )
+        clean_fasta_headers_with_tree(extract_protected_fasta.out, newick_tree)
         dequote_tree(clean_fasta_headers_with_tree.out.tree)
         add_reference_to_fasta(clean_fasta_headers_with_tree.out.fasta)
         fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
-        root_tree(force_update_tree.out.tree)
-        announce_tree_complete(root_tree.out)
+        announce_protobuf_complete(usher_start_tree.out.protobuf)
     emit:
-        protobuf = force_update_tree.out.protobuf
+        protobuf = usher_start_tree.out.protobuf
 }
 
 workflow {
