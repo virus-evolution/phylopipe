@@ -236,8 +236,22 @@ workflow mask_and_filter {
         mask_alignment(fasta)
         filter_uk(mask_alignment.out, metadata)
     emit:
-        masked_deduped_fasta = filter_uk.out.fasta
+        fasta = filter_uk.out.fasta
         metadata = filter_uk.out.metadata
+}
+
+workflow mask_and_filter_and_hash {
+    take:
+        fasta
+        metadata
+    main:
+        mask_alignment(fasta)
+        filter_uk(mask_alignment.out, metadata)
+        hash_non_unique_seqs(filter_uk.out.fasta, filter_uk.out.metadata)
+    emit:
+        fasta = filter_uk.out.fasta
+        metadata = filter_uk.out.metadata
+        hashmap = hash_non_unique_seqs.out.hashmap
 }
 
 workflow subsample_for_tree {

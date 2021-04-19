@@ -6,7 +6,22 @@ project_dir = projectDir
 publish_dir = file(params.publish_dir)
 publish_dev = file(params.publish_dev)
 
-//for line in $(cat pangoLEARN/pangoLEARN/data/lineages.downsample.csv); do echo -e "$(echo $line | cut -f2 --delim ',')\t$(echo $line | cut -f1 --delim ',')"; done > lineages.tsv
+
+process csv_to_tsv {
+    input:
+    path csv
+
+    output:
+    path "${csv.baseName}.tsv"
+
+    script:
+    """
+    $project_dir/../bin/lineages_csv_to_tsv.py \
+      --in-csv ${csv} \
+      --out-tsv "${csv.baseName}.tsv"
+    """
+}
+
 process make_lineage_annotated_tree {
     /**
     * Publishes master metadata csv for this category
@@ -51,47 +66,23 @@ process anonymize_protobuf {
 }
 
 
-publish_recipes = file(params.lineage_designations)
+lineage_designations = file(params.lineage_designations)
 
 
 workflow train_usher_pangolin {
     take:
-        fasta
-        metadata
-        variants
-        newick_tree
-        nexus_tree
+        protobuf
     main:
-        publish_master_metadata(metadata,params.category)
-        fetch_min_metadata(fasta,metadata)
-        split_recipes(publish_recipes)
-        recipe_ch = split_recipes.out.flatten()
-        fetch_min_metadata.out.fasta.combine(fetch_min_metadata.out.min_metadata)
-                                    .combine(metadata)
-                                    .combine(variants)
-                                    .combine(newick_tree)
-                                    .combine(nexus_tree)
-                                    .combine(recipe_ch)
-                                    .set{ publish_input_ch }
-        publish_tree_recipes(publish_input_ch)
-        outputs_ch = publish_tree_recipes.out.flag.collect()
-        announce_to_webhook(outputs_ch, "${params.whoami}")
-        //publish_s3(publish_tree_recipes.out.tree)
+        csv_to_tsv(lineage_designations)
+        make_lineage_annotated_tree(protobuf, csv_to_tsv.out)
+        anonymize_protobuf(make_lineage_annotated_tree.out)
     emit:
-        published = outputs_ch
+        protobuf = anonymize_protobuf.out
 }
 
 
 workflow {
-    fasta = Channel.fromPath(params.fasta)
-    metadata = Channel.fromPath(params.metadata)
-    variants = Channel.fromPath(params.variants)
-    newick_tree = Channel.fromPath(params.newick_tree)
-    nexus_tree = Channel.fromPath(params.nexus_tree)
+    protobuf = Channel.fromPath(params.protobuf)
 
-    publish_trees(fasta,
-                   metadata,
-                   variants,
-                   newick_tree,
-                   nexus_tree)
+    train_usher_pangolin(protobuf)
 }
