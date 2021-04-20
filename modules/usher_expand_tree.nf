@@ -490,6 +490,17 @@ workflow build_protobuf {
         protobuf = usher_start_tree.out.protobuf
 }
 
+workflow update_protobuf {
+    take:
+        fasta
+        protobuf
+    main:
+        iteratively_update_tree(fasta,protobuf)
+        announce_protobuf_complete(iteratively_update_tree.out.protobuf)
+    emit:
+        protobuf = iteratively_update_tree.out.protobuf
+}
+
 workflow {
     fasta = file(params.fasta)
     newick_tree = file(params.newick_tree)

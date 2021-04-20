@@ -24,13 +24,20 @@ workflow {
     } else {
         mask_and_filter_and_hash(extract_protected_fasta.out,ch_metadata)
         if ( params.newick_tree ) {
-            tree_ch = Channel.fromPath(params.newick_tree)
+            ch_tree = Channel.fromPath(params.newick_tree)
         } else {
             build_split_grafted_tree(mask_and_filter_and_hash.out.fasta, mask_and_filter_and_hash.out.metadata, mask_and_filter_and_hash.out.hashmap)
-            build_split_grafted_tree.out.tree.set{ tree_ch }
+            build_split_grafted_tree.out.tree.set{ ch_tree }
         }
-        build_protobuf(mask_and_filter_and_hash.out.fasta, tree_ch)
-        build_protobuf.out.protobuf.set{ protobuf_ch }
+        build_protobuf(mask_and_filter_and_hash.out.fasta, ch_tree)
+        build_protobuf.out.protobuf.set{ ch_protobuf }
     }
-    train_usher_pangolin(protobuf_ch)
+
+    if ( params.update_protobuf ) {
+        update_protobuf(ch_protobuf)
+        update_protobuf.out.protobuf.set{ ch_complete_protobuf }
+    } else {
+        ch_complete_protobuf = ch_protobuf
+    }
+    train_usher_pangolin(ch_complete_protobuf)
 }
