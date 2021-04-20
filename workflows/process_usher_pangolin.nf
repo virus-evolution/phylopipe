@@ -6,17 +6,23 @@ nextflow.enable.dsl = 2
 include { mask_and_filter_and_hash } from '../modules/subsample_for_tree.nf'
 include { build_split_grafted_tree } from '../modules/build_split_grafted_tree.nf'
 include { build_protobuf } from '../modules/usher_expand_tree.nf'
+include { extract_protected_fasta } from '../modules/usher_expand_tree.nf'
 include { train_usher_pangolin } from '../modules/train_usher_pangolin.nf'
 
 
 workflow {
     ch_fasta = Channel.fromPath(params.fasta)
     ch_metadata = Channel.fromPath(params.metadata)
+    if (! params.lineage_designations ) {
+        println(" Lineage designations is required")
+    }
+    lineage_designations = file( params.lineage_designations )
+    extract_protected_fasta( ch_fasta, lineage_designations )
 
     if ( params.protobuf ) {
         ch_protobuf = Channel.fromPath(params.protobuf)
     } else {
-        mask_and_filter_and_hash(ch_fasta,ch_metadata)
+        mask_and_filter_and_hash(extract_protected_fasta.out,ch_metadata)
         if ( params.newick_tree ) {
             tree_ch = Channel.fromPath(params.newick_tree)
         } else {

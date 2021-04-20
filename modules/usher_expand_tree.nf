@@ -476,12 +476,7 @@ workflow build_protobuf {
         fasta
         newick_tree
     main:
-        if (! params.lineage_designations ) {
-            println(" Lineage designations is required")
-        }
-        lineage_designations = file( params.lineage_designations )
-        extract_protected_fasta( fasta, lineage_designations )
-        clean_fasta_headers_with_tree(extract_protected_fasta.out, newick_tree)
+        clean_fasta_headers_with_tree(fasta, newick_tree)
         dequote_tree(clean_fasta_headers_with_tree.out.tree)
         add_reference_to_fasta(clean_fasta_headers_with_tree.out.fasta)
         fasta_to_vcf(add_reference_to_fasta.out)
