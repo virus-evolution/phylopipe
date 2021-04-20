@@ -435,7 +435,7 @@ workflow usher_expand_tree {
         newick_tree
     main:
         clean_fasta_headers_with_tree(fasta, newick_tree)
-        apply_map(metadata, clean_fasta_headers_with_tree.out.map)
+        clean_metadata(metadata, clean_fasta_headers_with_tree.out.map)
         dequote_tree(clean_fasta_headers_with_tree.out.tree)
         extract_tips_fasta(clean_fasta_headers_with_tree.out.fasta, dequote_tree.out)
         add_reference_to_fasta(extract_tips_fasta.out.fasta)
@@ -447,7 +447,7 @@ workflow usher_expand_tree {
         announce_tree_complete(root_tree.out)
     emit:
         fasta = clean_fasta_headers_with_tree.out.fasta
-        metadata = apply_map.out
+        metadata = clean_metadata.out
         tree = root_tree.out
         protobuf = force_update_tree.out.protobuf
 
@@ -461,7 +461,7 @@ workflow update_full_tree {
         protobuf
     main:
         clean_fasta_headers_with_tree(fasta, newick_tree)
-        apply_map(metadata, clean_fasta_headers_with_tree.out.map)
+        clean_metadata(metadata, clean_fasta_headers_with_tree.out.map)
         dequote_tree(clean_fasta_headers_with_tree.out.tree)
         extract_tips_fasta(clean_fasta_headers_with_tree.out.fasta, dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf)
@@ -470,7 +470,7 @@ workflow update_full_tree {
         announce_tree_complete(root_tree.out)
     emit:
         fasta = clean_fasta_headers_with_tree.out.fasta
-        metadata = apply_map.out
+        metadata = clean_metadata.out
         tree = root_tree.out
         protobuf = force_update_tree.out.protobuf
 }
