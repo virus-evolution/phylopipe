@@ -409,7 +409,6 @@ workflow force_update_tree {
         protobuf
         tree
     main:
-        lineage_designations = file( params.lineage_designations )
         if ( params.lineage_designations ) {
             lineage_designations = file( params.lineage_designations )
             extract_protected_fasta( fasta, lineage_designations )
