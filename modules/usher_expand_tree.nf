@@ -137,9 +137,11 @@ process extract_protected_fasta {
 
     script:
     """
+    cp ${metadata} ${metadata.baseName}.plus.csv
+    tail -n+2 ${lineage_splits} | cut -f2 -d"," >> ${metadata.baseName}.plus.csv
     fastafunk extract \
         --in-fasta ${fasta} \
-        --in-metadata ${metadata} \
+        --in-metadata "${metadata.baseName}.plus.csv" \
         --out-fasta "${fasta.baseName}.protected.fasta" \
         --reject-fasta "${fasta.baseName}.new.fasta" \
         --low-memory
@@ -381,6 +383,8 @@ process announce_protobuf_complete {
 }
 
 reference = file(params.reference_fasta)
+lineage_splits = file(params.lineage_splits)
+
 
 workflow iteratively_update_tree {
     take:
