@@ -72,6 +72,11 @@ def filter(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, includ
                 writer.writerow(row)
                 continue
 
+            if fasta_header not in records:
+                row["why_excluded"] = "Not in fasta"
+                writer.writerow(row)
+                continue
+
             if fasta_header in outgroups:
                 if "lineage" in reader.fieldnames:
                     row["lineage"] = outgroups[fasta_header]
