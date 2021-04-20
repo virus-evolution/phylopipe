@@ -503,7 +503,8 @@ workflow update_protobuf {
 
 workflow {
     fasta = file(params.fasta)
+    metadata = file(params.metadata)
     newick_tree = file(params.newick_tree)
 
-    usher_expand_tree(fasta,newick_tree)
+    usher_expand_tree(fasta,metadata,newick_tree)
 }

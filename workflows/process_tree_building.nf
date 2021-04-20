@@ -30,13 +30,13 @@ workflow {
     } else if ( params.protobuf && params.newick_tree) {
         ch_protobuf = Channel.fromPath(params.protobuf)
         ch_tree = Channel.fromPath(params.newick_tree)
-        update_full_tree(ch_preprocessed_fasta, ch_tree, ch_protobuf)
+        update_full_tree(ch_preprocessed_fasta, ch_processed_metadata, ch_tree, ch_protobuf)
         ch_full_tree = update_full_tree.out.tree
         ch_processed_fasta = update_full_tree.out.fasta
         ch_processed_metadata = update_full_tree.out.metadata
     } else if ( params.newick_tree ) {
         ch_tree = Channel.fromPath(params.newick_tree)
-        usher_expand_tree(ch_preprocessed_fasta, ch_tree)
+        usher_expand_tree(ch_preprocessed_fasta, ch_processed_metadata, ch_tree)
         ch_full_tree = usher_expand_tree.out.tree
         ch_processed_fasta = usher_expand_tree.out.fasta
         ch_processed_metadata = usher_expand_tree.out.metadata
@@ -48,7 +48,7 @@ workflow {
             ch_processed_fasta = subsample_for_tree.out.masked_deduped_fasta
             ch_processed_metadata = subsample_for_tree.out.metadata
         } else {
-            usher_expand_tree(subsample_for_tree.out.masked_deduped_fasta, build_split_grafted_tree.out.tree)
+            usher_expand_tree(subsample_for_tree.out.masked_deduped_fasta, subsample_for_tree.out.metadata, build_split_grafted_tree.out.tree)
             ch_full_tree = usher_expand_tree.out.tree
             ch_processed_fasta = usher_expand_tree.out.fasta
             ch_processed_metadata = usher_expand_tree.out.metadata
