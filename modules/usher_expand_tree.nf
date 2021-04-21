@@ -45,7 +45,7 @@ process clean_metadata {
     """
     $project_dir/../bin/apply_map.py \
           --in-metadata ${metadata} \
-          --in_map "${map}" \
+          --in-map "${map}" \
           --out-metadata "${metadata.baseName}.clean.csv"
     """
 }

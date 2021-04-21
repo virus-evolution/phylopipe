@@ -97,7 +97,7 @@ process publish_tree_recipes {
     publishDir "${publish_dir}/", pattern: "*/*.*", mode: 'copy', overwrite: false
 
     input:
-    tuple path(fasta),path(min_metadata),path(metadata),path(variants),path(newick_tree),path(nexus_tree),path(recipe)
+    tuple path(fasta),path(min_metadata),path(metadata),path(mutations),path(constellations),path(newick_tree),path(nexus_tree),path(recipe)
 
     output:
     path "${recipe.baseName}.done.txt", emit: flag
@@ -110,7 +110,8 @@ process publish_tree_recipes {
       --in-fasta ${fasta} \
       --min-metadata ${min_metadata} \
       --full-metadata ${metadata} \
-      --variants ${variants} \
+      --mutations ${mutations} \
+      --constellations ${constellations} \
       --newick-tree ${newick_tree} \
       --nexus-tree ${nexus_tree} \
       --seed ${params.seed} \
@@ -170,7 +171,8 @@ workflow publish_trees {
     take:
         fasta
         metadata
-        variants
+        mutations
+        constellations
         newick_tree
         nexus_tree
     main:
@@ -180,7 +182,8 @@ workflow publish_trees {
         recipe_ch = split_recipes.out.flatten()
         fetch_min_metadata.out.fasta.combine(fetch_min_metadata.out.min_metadata)
                                     .combine(metadata)
-                                    .combine(variants)
+                                    .combine(mutations)
+                                    .combine(constellations)
                                     .combine(newick_tree)
                                     .combine(nexus_tree)
                                     .combine(recipe_ch)
@@ -197,13 +200,15 @@ workflow publish_trees {
 workflow {
     fasta = Channel.fromPath(params.fasta)
     metadata = Channel.fromPath(params.metadata)
-    variants = Channel.fromPath(params.variants)
+    mutations = Channel.fromPath(params.mutations)
+    constellations = Channel.fromPath(params.constellations)
     newick_tree = Channel.fromPath(params.newick_tree)
     nexus_tree = Channel.fromPath(params.nexus_tree)
 
     publish_trees(fasta,
                    metadata,
-                   variants,
+                   mutations,
+                   constellations,
                    newick_tree,
                    nexus_tree)
 }

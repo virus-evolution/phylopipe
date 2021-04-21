@@ -60,6 +60,29 @@ process announce_split {
     """
 }
 
+process check_tree_building_size {
+    /**
+    * Checks fasta size is less than parameter
+    * @input fasta
+    */
+
+    input:
+    path fasta
+
+    output:
+    path "${fasta.baseName}.checked.fa"
+
+    script:
+    """
+    if [[ \$(cat ${fasta} | grep ">" | wc -l) -ge ${params.max_tree_size} ]]
+    then
+        echo "FASTA TOO BIG TO BUILD"
+    else
+        cp ${fasta} "${fasta.baseName}.checked.fa"
+    fi
+    """
+}
+
 process fasttree {
     /**
     * Runs fasttree on a lineage
@@ -236,6 +259,8 @@ workflow build_split_grafted_tree {
         split_fasta(fasta,metadata)
         if (params.webhook)
             announce_split(split_fasta.out.json)
+        split_fasta.out.fasta.flatMap { f -> f }.set{ fasta_ch }
+        check_tree_building_size(fasta_ch)
         split_fasta.out.fasta.flatMap { f -> f }.map { f -> [f.baseName,f] }.set{ split_fasta_ch }
         Channel.from(lineage_splits).splitCsv(header: false, skip: 1).set{ split_outgroup_ch }
 

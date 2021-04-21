@@ -15,7 +15,8 @@ include { publish_trees } from '../modules/publish_trees.nf'
 workflow {
     ch_fasta = Channel.fromPath(params.fasta)
     ch_metadata = Channel.fromPath(params.metadata)
-    ch_variants = Channel.fromPath(params.variants)
+    ch_mutations = Channel.fromPath(params.mutations)
+    ch_constellations = Channel.fromPath(params.constellations)
 
     if ( params.protobuf || params.newick_tree ) {
         mask_and_filter(ch_fasta,ch_metadata)
@@ -55,5 +56,5 @@ workflow {
         }
     }
     post_process_tree(ch_full_tree, ch_processed_metadata)
-    publish_trees(ch_processed_fasta, post_process_tree.out.metadata, ch_variants, post_process_tree.out.newick_tree, post_process_tree.out.nexus_tree)
+    publish_trees(ch_processed_fasta, post_process_tree.out.metadata, ch_mutations, ch_constellations, post_process_tree.out.newick_tree, post_process_tree.out.nexus_tree)
 }
