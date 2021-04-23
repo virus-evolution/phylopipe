@@ -148,7 +148,7 @@ process filter_on_sample_date {
     else
         """
         echo "date ${params.date}"
-        echo "time window ${parmas.time_window}"
+        echo "time window ${params.time_window}"
         mv "${metadata}" "${metadata.baseName}.date_filtered.csv"
         """
 }
