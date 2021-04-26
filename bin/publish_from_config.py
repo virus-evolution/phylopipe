@@ -41,7 +41,7 @@ def parse_args():
 #"anonymize": True or False to anonymize COG sequences e.g. for microreact
 #"seed": int, seed to use for anonymizing
 
-def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv, var_csv, tree_dict):
+def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv, var_csv, con_csv, tree_dict):
     info_dict = {"suffix":None, "metadata_fields":None, "where": None,
                  "mutations":False, "constellations":False,
                  "exclude_uk":False, "uk_only": False, "exclude_cog":False, "cog_only": False,
@@ -198,7 +198,7 @@ def main():
     for outdir in recipes.keys():
         os.makedirs(outdir,exist_ok=True)
         for recipe in recipes[outdir]:
-            info_dict = get_info_from_config(recipe, outdir, args.date, args.in_fasta, args.min_metadata, args.full_metadata, args.mutations, tree_dict)
+            info_dict = get_info_from_config(recipe, outdir, args.date, args.in_fasta, args.min_metadata, args.full_metadata, args.mutations, args.constellations, tree_dict)
             publish_file(outdir, info_dict, args.seed)
 
 if __name__ == '__main__':
