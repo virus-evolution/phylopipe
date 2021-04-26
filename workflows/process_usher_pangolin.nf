@@ -11,20 +11,22 @@ include { train_usher_pangolin } from '../modules/train_usher_pangolin.nf'
 
 
 workflow {
-    ch_fasta = Channel.fromPath(params.fasta)
-    ch_metadata = Channel.fromPath(params.metadata)
-    if (! params.lineage_designations ) {
-        println(" Lineage designations is required")
+
+    if ( ! params.fasta || ! params.metadata || ! params.lineage_designations ) {
+        println("Parameters --fasta, --metadata and --lineage_designations must be provided")
+        System.exit(1)
     }
-    lineage_designations = file( params.lineage_designations )
+    ch_fasta = Channel.fromPath(params.fasta, checkIfExists: true)
+    ch_metadata = Channel.fromPath(params.metadata, checkIfExists: true)
+    lineage_designations = file( params.lineage_designations, checkIfExists: true )
     extract_protected_fasta( ch_fasta, lineage_designations )
 
     if ( params.protobuf ) {
-        ch_protobuf = Channel.fromPath(params.protobuf)
+        ch_protobuf = Channel.fromPath(params.protobuf, checkIfExists: true)
     } else {
         mask_and_filter_and_hash(extract_protected_fasta.out,ch_metadata)
         if ( params.newick_tree ) {
-            ch_tree = Channel.fromPath(params.newick_tree)
+            ch_tree = Channel.fromPath(params.newick_tree, checkIfExists: true)
         } else {
             build_split_grafted_tree(mask_and_filter_and_hash.out.fasta, mask_and_filter_and_hash.out.metadata, mask_and_filter_and_hash.out.hashmap)
             build_split_grafted_tree.out.tree.set{ ch_tree }

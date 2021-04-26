@@ -66,13 +66,13 @@ process anonymize_protobuf {
 }
 
 
-lineage_designations = file(params.lineage_designations)
 
 
 workflow train_usher_pangolin {
     take:
         protobuf
     main:
+        lineage_designations = file(params.lineage_designations , checkIfExists: true)
         csv_to_tsv(lineage_designations)
         make_lineage_annotated_tree(protobuf, csv_to_tsv.out)
         anonymize_protobuf(make_lineage_annotated_tree.out)
