@@ -56,7 +56,7 @@ def clean(in_fasta, in_tree, out_fasta, out_metadata, out_tree):
             for line in tree_in:
                 for item in new_names:
                     line.replace(item, new_names[item])
-                    tree_out.write(line)
+                tree_out.write(line)
 
 def main():
     args = parse_args()
