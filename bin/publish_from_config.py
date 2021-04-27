@@ -41,13 +41,13 @@ def parse_args():
 #"anonymize": True or False to anonymize COG sequences e.g. for microreact
 #"seed": int, seed to use for anonymizing
 
-def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv, var_csv, con_csv, tree_dict):
+def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv, muts_csv, con_csv, tree_dict):
     info_dict = {"suffix":None, "metadata_fields":None, "where": None,
                  "mutations":False, "constellations":False,
                  "exclude_uk":False, "uk_only": False, "exclude_cog":False, "cog_only": False,
                  "tree":None, "fasta": None,
                  "anonymize":False, "date": date, "data": "cog_global",
-                 "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_var":var_csv, "in_con":con_csv, "in_tree":None,
+                 "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_muts":muts_csv, "in_con":con_csv, "in_tree":None,
                  "out_fa":None, "intermediate_csv":"tmp.csv", "out_csv":None, "out_tree":None}
     info_dict.update(config_dict)
 
@@ -76,7 +76,7 @@ def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv,
     csv_end = ".csv"
     info_dict["out_csv"] = "%s%s" %(start, csv_end)
 
-    if info_dict["mutations"] and info_dict["in_var"] is None:
+    if info_dict["mutations"] and info_dict["in_muts"] is None:
         sys.exit("Please provide the appropriate mutations file")
     if info_dict["constellations"] and info_dict["in_con"] is None:
             sys.exit("Please provide the appropriate constellations file")
@@ -134,7 +134,7 @@ def publish_file(outdir, info_dict, seed):
     if info_dict["out_fa"] is not None:
         cmd_list = ["fastafunk fetch --in-fasta", info_dict["in_fa"], "--in-metadata", info_dict["full_csv"],
                   "--index-column sequence_name --out-fasta", info_dict["out_fa"],
-                  "--out-metadata", info_dict["out_csv"], "--restrict --low-memory --keep-omit-rows"]
+                  "--out-metadata", info_dict["intermediate_csv"], "--restrict --low-memory --keep-omit-rows"]
         if info_dict["metadata_fields"]:
                 cmd_list.append("--filter-column")
                 cmd_list.extend(info_dict["metadata_fields"])
@@ -144,7 +144,7 @@ def publish_file(outdir, info_dict, seed):
     else:
         cmd_list = ["fastafunk add_columns --in-metadata", info_dict["min_csv"],
             "--in-data", info_dict["full_csv"], "--index-column sequence_name",
-            "--join-on sequence_name --out-metadata", info_dict["intermdiate_csv"]]
+            "--join-on sequence_name --out-metadata", info_dict["intermediate_csv"]]
         syscall(cmd_list)
         if info_dict["metadata_fields"]:
                 cmd_list.append("--new-columns")
