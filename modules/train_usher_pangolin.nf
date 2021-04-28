@@ -29,7 +29,7 @@ process make_lineage_annotated_tree {
     * @output protobuf
     */
 
-    publishDir "${publish}/pangolin", pattern: "*.pb", mode: 'copy'
+    publishDir "${publish_dir}/pangolin", pattern: "*.pb", mode: 'copy'
 
     input:
     path protobuf
@@ -51,7 +51,7 @@ process anonymize_protobuf {
     * @output protobuf
     */
 
-    publishDir "${publish}/pangolin", pattern: "*.pb", mode: 'copy'
+    publishDir "${publish_dir}/pangolin", pattern: "*.pb", mode: 'copy'
 
     input:
     path protobuf

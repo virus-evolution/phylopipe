@@ -3,10 +3,14 @@
 nextflow.enable.dsl = 2
 
 // import modules
-include { mask_and_filter_and_hash } from '../modules/subsample_for_tree.nf'
+include { mask_and_filter } from '../modules/preprocess.nf'
+include { clean_fasta_and_metadata } from '../modules/preprocess.nf'
+include { clean_fasta_and_metadata_and_tree } from '../modules/preprocess.nf'
+include { extract_protected_sequences } from '../modules/extract_protected_sequences.nf'
+include { subsample_for_tree } from '../modules/subsample_for_tree.nf'
 include { build_split_grafted_tree } from '../modules/build_split_grafted_tree.nf'
 include { build_protobuf } from '../modules/usher_expand_tree.nf'
-include { extract_protected_fasta } from '../modules/usher_expand_tree.nf'
+include { update_protobuf } from '../modules/usher_expand_tree.nf'
 include { train_usher_pangolin } from '../modules/train_usher_pangolin.nf'
 
 
@@ -19,27 +23,33 @@ workflow {
     ch_fasta = Channel.fromPath(params.fasta, checkIfExists: true)
     ch_metadata = Channel.fromPath(params.metadata, checkIfExists: true)
     lineage_designations = file( params.lineage_designations, checkIfExists: true )
-    extract_protected_fasta( ch_fasta, lineage_designations )
+
+    if ( params.newick_tree ) {
+        ch_tree = Channel.fromPath(params.newick_tree, checkIfExists: true)
+        clean_fasta_and_metadata_and_tree(ch_fasta, ch_metadata, ch_tree)
+        ch_clean_fasta = clean_fasta_and_metadata_and_tree.out.fasta
+        ch_clean_metadata = clean_fasta_and_metadata_and_tree.out.metadata
+        ch_clean_tree = clean_fasta_and_metadata_and_tree.out.tree
+    } else {
+        clean_fasta_and_metadata(ch_fasta, ch_metadata)
+        ch_clean_fasta = clean_fasta_and_metadata.out.fasta
+        ch_clean_metadata = clean_fasta_and_metadata.out.metadata
+    }
 
     if ( params.protobuf ) {
         ch_protobuf = Channel.fromPath(params.protobuf, checkIfExists: true)
     } else {
-        mask_and_filter_and_hash(extract_protected_fasta.out,ch_metadata)
-        if ( params.newick_tree ) {
-            ch_tree = Channel.fromPath(params.newick_tree, checkIfExists: true)
-        } else {
-            build_split_grafted_tree(mask_and_filter_and_hash.out.fasta, mask_and_filter_and_hash.out.metadata, mask_and_filter_and_hash.out.hashmap)
-            build_split_grafted_tree.out.tree.set{ ch_tree }
+        if ( ! params.newick_tree ) {
+            mask_and_filter(ch_clean_fasta, ch_clean_metadata)
+            subsample_for_tree(mask_and_filter.out.fasta, mask_and_filter.out.metadata)
+            build_split_grafted_tree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata, subsample_for_tree.out.hashmap)
+            ch_clean_tree = build_split_grafted_tree.out.tree
         }
-        build_protobuf(mask_and_filter_and_hash.out.fasta, ch_tree)
-        build_protobuf.out.protobuf.set{ ch_protobuf }
+        build_protobuf(ch_clean_fasta, ch_clean_tree)
+        ch_protobuf = build_protobuf.out.protobuf
     }
 
-    if ( params.update_protobuf ) {
-        update_protobuf(ch_protobuf)
-        update_protobuf.out.protobuf.set{ ch_complete_protobuf }
-    } else {
-        ch_complete_protobuf = ch_protobuf
-    }
-    train_usher_pangolin(ch_complete_protobuf)
+    ch_protected = extract_protected_sequences(ch_clean_fasta, ch_clean_metadata)
+    update_protobuf(ch_protected, ch_protobuf)
+    train_usher_pangolin(update_protobuf.out.protobuf)
 }

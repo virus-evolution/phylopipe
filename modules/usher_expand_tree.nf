@@ -381,9 +381,8 @@ workflow build_protobuf {
         fasta
         newick_tree
     main:
-        clean_fasta_headers_with_tree(fasta, newick_tree)
-        dequote_tree(clean_fasta_headers_with_tree.out.tree)
-        add_reference_to_fasta(clean_fasta_headers_with_tree.out.fasta)
+        dequote_tree(newick_tree)
+        add_reference_to_fasta(fasta)
         fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         announce_protobuf_complete(usher_start_tree.out.protobuf)
@@ -396,10 +395,10 @@ workflow update_protobuf {
         fasta
         protobuf
     main:
-        iteratively_update_tree(fasta,protobuf)
-        announce_protobuf_complete(iteratively_update_tree.out.protobuf)
+        iteratively_force_update_tree(fasta,protobuf)
+        announce_protobuf_complete(iteratively_force_update_tree.out.protobuf)
     emit:
-        protobuf = iteratively_update_tree.out.protobuf
+        protobuf = iteratively_force_update_tree.out.protobuf
 }
 
 workflow {
