@@ -48,6 +48,11 @@ process extract_tips_fasta {
         --out-fasta "${fasta.baseName}.tips.fasta" \
         --reject-fasta "${fasta.baseName}.new.fasta" \
         --low-memory
+    # hack to make sure nexflow doesn't stall if no new sequences
+    if [ -s "${fasta.baseName}.new.fasta" ]
+    then
+        head -n10 "${fasta.baseName}.tips.fasta" > "${fasta.baseName}.new.fasta"
+    fi
     """
 }
 

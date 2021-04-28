@@ -19,7 +19,7 @@
         "primary_uk_lineage"
       ],
       "mutations": true,
-      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK"
+      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK adm2=adm2_raw"
     },
     {
       "suffix": "private",
@@ -41,7 +41,7 @@
         "primary_uk_lineage"
       ],
       "mutations": true,
-      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK"
+      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK adm2=adm2_raw"
     }
   ],
   "metadata": [

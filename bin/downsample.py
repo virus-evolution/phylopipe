@@ -11,7 +11,7 @@ FASTA_HEADER = "sequence_name"
 def parse_args():
     parser = argparse.ArgumentParser(description="""Pick a representative sample for each unique sequence""",
                                     formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--in-metadata', dest = 'in_metadata', required=True, help='CSV of containing sequence_name and nucleotide_variants columns, the latter being | separated list of variants')
+    parser.add_argument('--in-metadata', dest = 'in_metadata', required=True, help='CSV of containing sequence_name and nucleotide_variants or nucleotide_mutations columns, the latter being | separated list of variants')
     parser.add_argument('--in-fasta', dest = 'in_fasta', required=True, help='FASTA of all input seqs')
     parser.add_argument('--diff', dest = 'diff', required=True, type=int, help='Samples within distance DIFF of included others may be excluded by the downsampler')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV to write out')
@@ -42,14 +42,14 @@ def parse_outgroups(outgroup_file):
             line = outgroup_handle.readline()
     return(outgroups)
 
-def get_count_dict(in_metadata):
+def get_count_dict(in_metadata, var_column):
     count_dict = {}
     num_samples = 0
     with open(in_metadata,"r") as f:
         reader = csv.DictReader(f)
         for row in reader:
             num_samples += 1
-            for var in row["nucleotide_variants"].split("|"):
+            for var in row[var_column].split("|"):
                 if var in count_dict:
                     count_dict[var] += 1
                 else:
@@ -109,10 +109,6 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
     sample_dict = {}
     var_dict = {}
 
-    count_dict, num_samples = get_count_dict(in_metadata)
-    most_frequent = get_by_frequency(count_dict, num_samples, band=[0.05,1.0])
-    very_most_frequent = get_by_frequency(count_dict, num_samples, band=[0.5,1.0])
-
     lineage_dict = get_lineage_dict(in_metadata,downsample_lineage_size)
 
     outgroups = parse_outgroups(outgroup_file)
@@ -125,6 +121,17 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
         reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
         writer = csv.DictWriter(csv_out, fieldnames = reader.fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
         writer.writeheader()
+
+        if "nucleotide_variants" in reader.fieldnames:
+            var_column = "nucleotide_variants"
+        elif "nucleotide_mutations" in reader.fieldnames:
+            var_column = "nucleotide_mutations"
+        else:
+            print("No nucleotide_variants or nucleotide_mutations columns found")
+
+        count_dict, num_samples = get_count_dict(in_metadata, var_column)
+        most_frequent = get_by_frequency(count_dict, num_samples, band=[0.05,1.0])
+        very_most_frequent = get_by_frequency(count_dict, num_samples, band=[0.5,1.0])
 
         for row in reader:
             fasta_header = row[FASTA_HEADER]
@@ -147,8 +154,7 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
                 else:
                     print(row["why_excluded"], fasta_header, (fasta_header in indexed_fasta))
                 continue
-
-            muts = row["nucleotide_variants"].split("|")
+            muts = row[var_column].split("|")
             if len(muts) < max_diff:
                 #if not row["why_excluded"]:
                 #    row["why_excluded"] = "downsampled with diff threshold %i" %max_diff

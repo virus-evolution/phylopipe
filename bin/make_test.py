@@ -54,7 +54,10 @@ def get_split(row, sorted_list_outgroups):
 
 def make_test(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, size):
     outgroups = parse_outgroups(outgroup_file)
-    sorted_list_outgroups = outgroups.keys().sort(key=lambda x: re.sub("[^A-Z0-9]", "", x), reverse=True)
+    print(outgroups)
+    sorted_list_outgroups = [outgroups[k] for k in outgroups]
+    print(sorted_list_outgroups)
+    sorted_list_outgroups.sort(reverse=True)
     print(sorted_list_outgroups)
     records = SeqIO.index(in_fasta, "fasta")
 
@@ -80,6 +83,9 @@ def make_test(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, siz
             status = get_cog_uk_status(row)
             split = get_split(row, sorted_list_outgroups)
 
+            if split is None:
+                continue
+
             if fasta_header in outgroups:
                 writer.writerow(row)
                 fa_out.write(">%s\n" %row["sequence_name"])
@@ -97,8 +103,8 @@ def make_test(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, siz
                 counts[status][split] += 1
                 all_counts += 1
 
-            if all_counts > len(outgroups) * size:
-                break
+            #if all_counts > len(outgroups) * size:
+            #    break
 
 
 def main():
