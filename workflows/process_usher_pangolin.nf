@@ -22,16 +22,18 @@ workflow {
     }
     ch_fasta = Channel.fromPath(params.fasta, checkIfExists: true)
     ch_metadata = Channel.fromPath(params.metadata, checkIfExists: true)
+    mask_and_filter(ch_fasta, ch_metadata)
+
     lineage_designations = file( params.lineage_designations, checkIfExists: true )
 
     if ( params.newick_tree ) {
         ch_tree = Channel.fromPath(params.newick_tree, checkIfExists: true)
-        clean_fasta_and_metadata_and_tree(ch_fasta, ch_metadata, ch_tree)
+        clean_fasta_and_metadata_and_tree(mask_and_filter.out.fasta, mask_and_filter.out.metadata, ch_tree)
         ch_clean_fasta = clean_fasta_and_metadata_and_tree.out.fasta
         ch_clean_metadata = clean_fasta_and_metadata_and_tree.out.metadata
         ch_clean_tree = clean_fasta_and_metadata_and_tree.out.tree
     } else {
-        clean_fasta_and_metadata(ch_fasta, ch_metadata)
+        clean_fasta_and_metadata(mask_and_filter.out.fasta, mask_and_filter.out.metadata)
         ch_clean_fasta = clean_fasta_and_metadata.out.fasta
         ch_clean_metadata = clean_fasta_and_metadata.out.metadata
     }
@@ -40,8 +42,7 @@ workflow {
         ch_protobuf = Channel.fromPath(params.protobuf, checkIfExists: true)
     } else {
         if ( ! params.newick_tree ) {
-            mask_and_filter(ch_clean_fasta, ch_clean_metadata)
-            subsample_for_tree(mask_and_filter.out.fasta, mask_and_filter.out.metadata)
+            subsample_for_tree(ch_clean_fasta, ch_clean_metadata)
             build_split_grafted_tree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata, subsample_for_tree.out.hashmap)
             ch_clean_tree = build_split_grafted_tree.out.tree
         }

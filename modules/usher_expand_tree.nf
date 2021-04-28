@@ -25,6 +25,27 @@ process dequote_tree {
 }
 
 
+process mask_reference {
+    /**
+    * Applies a mask to reference
+    * @input alignment
+    * @output alignment_updated
+    * @params mask_file
+    */
+
+    output:
+    path "${reference.baseName}.masked.fa"
+
+    script:
+    """
+    $project_dir/../bin/add_mask.py \
+      --in-alignment ${reference} \
+      --out-alignment "${reference.baseName}.masked.fa" \
+      --mask ${mask_file} \
+    """
+}
+
+
 process extract_tips_fasta {
     /**
     * Extracts fasta corresponding to tips in the tree
@@ -65,13 +86,14 @@ process add_reference_to_fasta {
 
     input:
     path fasta
+    path ref
 
     output:
     path "${fasta.baseName}.with_reference.fasta"
 
     script:
     """
-    cat ${reference} > "${fasta.baseName}.with_reference.fasta"
+    cat ${ref} > "${fasta.baseName}.with_reference.fasta"
     cat ${fasta} >> "${fasta.baseName}.with_reference.fasta"
     """
 }
@@ -293,6 +315,7 @@ process announce_protobuf_complete {
 
 reference = file(params.reference_fasta)
 lineage_splits = file(params.lineage_splits)
+mask_file = file(params.mask)
 
 
 workflow iteratively_update_tree {
@@ -301,7 +324,8 @@ workflow iteratively_update_tree {
         protobuf
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        add_reference_to_fasta(fasta_chunks)
+        masked_reference = mask_reference()
+        add_reference_to_fasta(fasta_chunks, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
 
         usher_update_tree(fasta_to_vcf.out, protobuf)
@@ -318,7 +342,8 @@ workflow iteratively_force_update_tree {
         protobuf
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        add_reference_to_fasta(fasta_chunks)
+        masked_reference = mask_reference()
+        add_reference_to_fasta(fasta_chunks, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
 
         usher_force_update_tree(fasta_to_vcf.out, protobuf)
@@ -337,7 +362,8 @@ workflow usher_expand_tree {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        add_reference_to_fasta(extract_tips_fasta.out.fasta)
+        masked_reference = mask_reference()
+        add_reference_to_fasta(extract_tips_fasta.out.fasta, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf)
@@ -383,7 +409,8 @@ workflow build_protobuf {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        add_reference_to_fasta(extract_tips_fasta.out.fasta)
+        masked_reference = mask_reference()
+        add_reference_to_fasta(extract_tips_fasta.out.fasta, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         announce_protobuf_complete(usher_start_tree.out.protobuf)

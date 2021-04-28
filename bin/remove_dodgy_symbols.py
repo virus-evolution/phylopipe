@@ -54,9 +54,10 @@ def clean(in_fasta, in_tree, out_fasta, out_metadata, out_tree):
     if in_tree:
         with open(in_tree, 'r') as tree_in, open(out_tree, 'w') as tree_out:
             for line in tree_in:
+                correct = line
                 for item in new_names:
-                    line = line.replace(item, new_names[item])
-                tree_out.write(line)
+                    correct = correct.replace(item, new_names[item])
+                tree_out.write(correct)
 
 def main():
     args = parse_args()
