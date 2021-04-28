@@ -78,6 +78,25 @@ process extract_tips_fasta {
 }
 
 
+process copy_protobuf {
+    /**
+    * Copies protobuf
+    * @input protobuf
+    */
+
+    input:
+    path protobuf
+
+    output:
+    path "${protobuf.baseName}.in.pb"
+
+    script:
+    """
+    cp ${protobuf} "${protobuf.baseName}.in.pb"
+    """
+}
+
+
 process add_reference_to_fasta {
     /**
     * Creates a new fasta with reference first
@@ -327,8 +346,8 @@ workflow iteratively_update_tree {
         masked_reference = mask_reference()
         add_reference_to_fasta(fasta_chunks, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
-
-        usher_update_tree(fasta_to_vcf.out, protobuf)
+        copy_protobuf(protobuf)
+        usher_update_tree(fasta_to_vcf.out, copy_protobuf.out)
         final_tree = usher_update_tree.out.tree.last()
         final_protobuf = usher_update_tree.out.protobuf.last()
     emit:
@@ -345,8 +364,8 @@ workflow iteratively_force_update_tree {
         masked_reference = mask_reference()
         add_reference_to_fasta(fasta_chunks, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
-
-        usher_force_update_tree(fasta_to_vcf.out, protobuf)
+        copy_protobuf(protobuf)
+        usher_force_update_tree(fasta_to_vcf.out, copy_protobuf.out)
         final_tree = usher_force_update_tree.out.tree.last()
         final_protobuf = usher_force_update_tree.out.protobuf.last()
     emit:
