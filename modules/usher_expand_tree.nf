@@ -382,7 +382,8 @@ workflow build_protobuf {
         newick_tree
     main:
         dequote_tree(newick_tree)
-        add_reference_to_fasta(fasta)
+        extract_tips_fasta(fasta, dequote_tree.out)
+        add_reference_to_fasta(extract_tips_fasta.out.fasta)
         fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         announce_protobuf_complete(usher_start_tree.out.protobuf)
