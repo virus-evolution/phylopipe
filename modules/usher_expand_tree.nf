@@ -124,7 +124,7 @@ process fasta_to_vcf {
     * @input fasta
     */
     maxForks 100
-    memory { fasta.size() * 30.B + 2.GB * task.attempt }
+    memory { fasta.size() * 1.B + 10.GB * task.attempt }
 
 
     input:
@@ -144,7 +144,7 @@ process usher_start_tree {
     * Makes usher mutation annotated tree
     * @input tree, vcf
     */
-    memory { 10.GB * task.attempt + vcf.size() * 30.B }
+    memory { 10.GB * task.attempt + vcf.size() * 1.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 1
     cpus 8
@@ -412,9 +412,11 @@ workflow soft_update_usher_tree {
 workflow hard_update_usher_tree {
     take:
         fasta
+        newick_tree
         protobuf
     main:
-        iteratively_force_update_tree(fasta, protobuf)
+        extract_tips_fasta(fasta, newick_tree)
+        iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf)
         root_tree(iteratively_force_update_tree.out.tree)
     emit:
         tree = root_tree.out

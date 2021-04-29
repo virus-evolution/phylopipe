@@ -50,17 +50,17 @@ workflow {
         }
         usher_expand_tree(ch_clean_fasta, ch_clean_tree)
         ch_protobuf = usher_expand_tree.out.protobuf
+        ch_expanded_tree = usher_expand_tree.out.tree
 
     } else if ( params.newick_tree ) {
         ch_protobuf_raw = Channel.fromPath(params.protobuf)
         soft_update_usher_tree(ch_clean_fasta, ch_clean_tree, ch_protobuf_raw)
         ch_protobuf = soft_update_usher_tree.out.protobuf
-    } else {
-        ch_protobuf = Channel.fromPath(params.protobuf)
+        ch_expanded_tree = soft_update_usher_tree.out.tree
     }
 
     if (! params.skip_usher ) {
-        hard_update_usher_tree(ch_protected, ch_protobuf)
+        hard_update_usher_tree(ch_protected, ch_expanded_tree, ch_protobuf)
         ch_full_tree = hard_update_usher_tree.out.tree
     }
 
