@@ -65,7 +65,34 @@ process anonymize_protobuf {
     """
 }
 
+process announce_training_complete {
+    /**
+    * Announces usher training complete
+    * @input protobuf
+    */
 
+    input:
+    path protobuf
+
+    output:
+    path "usher_pb.json"
+
+    script:
+        if (params.webhook)
+            """
+            echo '{"text":"' > usher_pb.json
+            echo "*${params.whoami}: Usher training for ${params.date} complete*\\n" >> usher_pb.json
+            echo '"}' >> usher_pb.json
+
+            echo 'webhook ${params.webhook}'
+
+            curl -X POST -H "Content-type: application/json" -d @usher_pb.json ${params.webhook}
+            """
+        else
+           """
+           touch "usher_pb.json"
+           """
+}
 
 
 workflow train_usher_pangolin {
@@ -76,6 +103,7 @@ workflow train_usher_pangolin {
         csv_to_tsv(lineage_designations)
         make_lineage_annotated_tree(protobuf, csv_to_tsv.out)
         anonymize_protobuf(make_lineage_annotated_tree.out)
+        announce_training_complete(anonymize_protobuf.out)
     emit:
         protobuf = anonymize_protobuf.out
 }
