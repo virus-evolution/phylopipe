@@ -124,7 +124,7 @@ process fasta_to_vcf {
     * @input fasta
     */
     maxForks 100
-    memory { fasta.size() * 1.B + 10.GB * task.attempt }
+    memory { 10.GB * task.attempt + fasta.size() * 3.B }
 
 
     input:
@@ -144,7 +144,7 @@ process usher_start_tree {
     * Makes usher mutation annotated tree
     * @input tree, vcf
     */
-    memory { 10.GB * task.attempt + vcf.size() * 1.B }
+    memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries = 1
     cpus 8
@@ -181,7 +181,7 @@ process usher_update_tree {
     */
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     maxForks 1
-    memory { 10.GB * task.attempt + vcf.size() * 50.B }
+    memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries = 2
     cpus 8
@@ -220,7 +220,7 @@ process usher_force_update_tree {
     */
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     maxForks 1
-    memory { 10.GB * task.attempt + vcf.size() * 50.B }
+    memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries = 2
     cpus 8
