@@ -51,7 +51,7 @@ process extract_tips_fasta {
     * Extracts fasta corresponding to tips in the tree
     * @input fasta, tree
     */
-    label 'retry_increasing_mem'
+    label 'retry_increasing_mem_later'
 
     input:
     path fasta

@@ -85,6 +85,7 @@ process clean_fasta_headers_with_tree {
     * Cleans up strings in FASTA
     * @input fastas
     */
+    label 'retry_later'
 
     input:
     path fasta
