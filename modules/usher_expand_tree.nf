@@ -102,6 +102,9 @@ process add_reference_to_fasta {
     * Creates a new fasta with reference first
     * @input fasta
     */
+    maxForks 10
+    label 'retry_later'
+
 
     input:
     path fasta
@@ -122,9 +125,9 @@ process fasta_to_vcf {
     * Makes VCF for usher
     * @input fasta
     */
+    maxForks 10
+    label 'retry_later'
     memory { fasta.size() * 30.B + 2.GB * task.attempt }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    maxRetries = 2
 
 
     input:
