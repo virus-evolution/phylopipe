@@ -13,11 +13,12 @@ def parse_args():
     parser.add_argument('--date', required=False, help='Date to measure time window from, if none provided uses todays date')
     parser.add_argument('--time-window', required=False, default=30, type=int, help='Number of days')
     parser.add_argument('--filter-column', dest = 'filter_column', required=False, default="date_filter", help='Column to update with filter output')
+    parser.add_argument('--restrict', action="store_true", help='Only output recent metadata rows')
 
     args = parser.parse_args()
     return args
 
-def filter_by_date(in_metadata, out_metadata, todays_date, time_window, filter_column):
+def filter_by_date(in_metadata, out_metadata, todays_date, time_window, filter_column, restrict):
     """
     input is CSV, last column being the representative outgroups:
     """
@@ -44,19 +45,22 @@ def filter_by_date(in_metadata, out_metadata, todays_date, time_window, filter_c
                     row[column] = ""
 
             if row["why_excluded"] not in [None,"None",""]:
-                writer.writerow(row)
+                if not restrict:
+                    writer.writerow(row)
                 continue
 
             try:
                 date = datetime.datetime.strptime(row["sample_date"], '%Y-%m-%d').date()
             except:
                 row["why_excluded"] = "no sample_date"
-                writer.writerow(row)
+                if not restrict:
+                    writer.writerow(row)
                 continue
 
             if (todays_date - window) > date:
                 row[filter_column] = "sample_date older than %s days" %window
-                writer.writerow(row)
+                if not restrict:
+                    writer.writerow(row)
                 continue
 
             writer.writerow(row)
@@ -64,7 +68,7 @@ def filter_by_date(in_metadata, out_metadata, todays_date, time_window, filter_c
 
 def main():
     args = parse_args()
-    filter_by_date(args.in_metadata, args.out_metadata, args.date, args.time_window, args.filter_column)
+    filter_by_date(args.in_metadata, args.out_metadata, args.date, args.time_window, args.filter_column, args.restrict)
 
 if __name__ == '__main__':
     main()

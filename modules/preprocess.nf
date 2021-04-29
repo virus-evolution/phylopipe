@@ -85,7 +85,7 @@ process clean_fasta_headers_with_tree {
     * Cleans up strings in FASTA
     * @input fastas
     */
-    
+
     input:
     path fasta
     path tree

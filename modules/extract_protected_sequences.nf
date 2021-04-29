@@ -29,7 +29,8 @@ process filter_on_sample_date_for_recent {
                     --out-metadata "${metadata.baseName}.recent.csv" \
                     --date ${params.date} \
                     --time-window ${params.time_window} \
-                    --filter-column "why_excluded"
+                    --filter-column "why_excluded" \
+                    --restrict
         """
     else
         """
