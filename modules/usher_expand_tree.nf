@@ -415,7 +415,8 @@ workflow hard_update_usher_tree {
         newick_tree
         protobuf
     main:
-        extract_tips_fasta(fasta, newick_tree)
+        dequote_tree(newick_tree)
+        extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf)
         root_tree(iteratively_force_update_tree.out.tree)
     emit:
