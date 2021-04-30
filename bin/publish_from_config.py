@@ -46,7 +46,7 @@ def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv,
                  "mutations":False, "constellations":False,
                  "exclude_uk":False, "uk_only": False, "exclude_cog":False, "cog_only": False,
                  "tree":None, "fasta": None,
-                 "anonymize":False, "date": date, "data": "cog_global",
+                 "anonymize":False, "drop_index": False, "date": date, "data": "cog_global",
                  "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_muts":muts_csv, "in_con":con_csv, "in_tree":None,
                  "out_fa":None, "intermediate_csv":"tmp.csv", "out_csv":None, "out_tree":None}
     info_dict.update(config_dict)
@@ -173,6 +173,14 @@ def publish_file(outdir, info_dict, seed):
                              metadata_out = "tmp.anon.csv",
                              tree_out = info_dict["out_tree"],
                              seed = seed)
+        info_dict["intermediate_csv"] = "tmp.anon.csv"
+
+    if info_dict["drop_index"]:
+        cmd_list = ["fastafunk drop_columns --in-metadata", info_dict["intermediate_csv"],
+        "--columns", info_dict["drop_index"],
+        "--out-metadata tmp.drop.csv"]
+        info_dict["intermediate_csv"] = "tmp.drop.csv"
+        syscall(cmd_list)
 
     cmd_list = ["mv", info_dict["intermediate_csv"], info_dict["out_csv"]]
     syscall(cmd_list)

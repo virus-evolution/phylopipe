@@ -17,82 +17,50 @@ def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
     if seed:
         random.seed(seed)
 
-    metadata_list = []
-    with open(metadata_in, 'r', newline = '') as csvfile:
-        reader = csv.reader(csvfile, delimiter=",", quotechar='\"', dialect = "unix")
-        First = True
-        for line in reader:
-            if First:
-                header = line
-                if not all(x in line for x in ['adm2', 'sequence_name']):
-                    sys.exit('required columns not found in metadata')
-                First = False
-                continue
-            d = {x:y for x,y in zip(header, line)}
-
-            metadata_list = metadata_list + [d]
-
-
     admn2_counts = {}
-    for entry in metadata_list:
-        location = entry['adm2']
-        if location in admn2_counts:
-            admn2_counts[location] = admn2_counts[location] + 1
-        else:
-            admn2_counts[location] = 1
+    with open(metadata_in, 'r', newline = '') as csv_in:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        if not all(x in reader.fieldnames for x in ['adm2', 'is_cog_uk', 'sequence_name']):
+            sys.exit('required columns not found in metadata')
+        for row in reader:
+            location = row['adm2']
+            if location in admn2_counts:
+                admn2_counts[location] += 1
+            else:
+                admn2_counts[location] = 1
 
     anonymous_locations = []
     for location in admn2_counts:
         if admn2_counts[location] < 5:
             anonymous_locations.append(location)
-
     anonymous_locations = set(anonymous_locations)
+    print("Found %i anonymous_locations" %len(anonymous_locations))
+    del admn2_counts
 
-    for entry in metadata_list:
-        if entry['adm2'] in anonymous_locations:
-            entry['anonymized_admn2'] = ''
-        else:
-            entry['anonymized_admn2'] = entry['adm2']
+    anonymous_names = {}
+    with open(metadata_in, 'r', newline = '') as csv_in, \
+         open(metadata_out, 'w', newline = '') as csv_out:
 
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        writer = csv.DictWriter(csv_out, fieldnames = reader.fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
+        writer.writeheader()
 
-    random_names = []
-    for entry in metadata_list:
-        if entry['sequence_name'].split('/')[0] in ['Wales', 'Scotland', 'Northern_Ireland', 'England']:
-            anonymous_name = get_random_name()
-            while anonymous_name in random_names:
+        for row in reader:
+            if row['adm2'] in anonymous_locations:
+                row['adm2'] = ''
+
+            if row['is_cog_uk'] in ["True", True]:
                 anonymous_name = get_random_name()
-            random_names.append(anonymous_name)
+                while anonymous_name in anonymous_names:
+                    anonymous_name = get_random_name()
+                anonymous_names[anonymous_name] = row['sequence_name']
+                row['sequence_name'] = anonymous_name
 
-            entry['anonymized_sequence_name'] = anonymous_name
-        else:
-            entry['anonymized_sequence_name'] = entry['sequence_name']
-
-    new_columns = copy.copy(header)
-    for i, item in enumerate(new_columns):
-        if item == 'sequence_name':
-            new_columns[i] = 'anonymized_sequence_name'
-        if item == 'adm2':
-            new_columns[i] = 'anonymized_admn2'
-
-    with open(metadata_out, 'w', newline = '') as csvfile:
-        writer = csv.writer(csvfile, delimiter=",", quotechar='\"',
-                            quoting=csv.QUOTE_MINIMAL, dialect = "unix")
-
-        # writer.write(','.join(header) + '\n')
-        writer.writerow(header)
-
-        for entry in metadata_list:
-            # file_out.write(','.join([entry[x] for x in new_columns]) + '\n')
-            writer.writerow([entry[x] for x in new_columns])
-
-    label_mappings = {}
-    for entry in metadata_list:
-        if entry['sequence_name'] != entry['anonymized_sequence_name']:
-            label_mappings[entry['sequence_name']] = entry['anonymized_sequence_name']
-
+            writer.writerow(row)
+    print("Found %i anonymous_names" %len(anonymous_names))
     tree = open(tree_in, 'r').read()
 
-    for old, new in label_mappings.items():
+    for new, old in anonymous_names.items():
         tree = tree.replace("\'" + old + "\'", "\'" + new + "\'")
 
     tree_out = open(tree_out, 'w')

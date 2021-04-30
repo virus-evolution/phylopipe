@@ -16,10 +16,12 @@
         "lineage",
         "lineage_support",
         "uk_lineage",
-        "primary_uk_lineage"
+        "primary_uk_lineage",
+        "is_cog_uk"
       ],
       "mutations": true,
-      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK adm2=adm2_raw"
+      "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK adm2=adm2_raw",
+      "drop_index": "is_cog_uk"
     },
     {
       "suffix": "private",
