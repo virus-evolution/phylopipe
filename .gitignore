@@ -1,0 +1,8 @@
+bin/__pycache__
+analysis/
+publish/
+publish_dev/
+test/
+.nextflow*
+.idea/
+
