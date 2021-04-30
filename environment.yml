@@ -1,4 +1,4 @@
-name: grapevine-global-tree
+name: phylopipe
 channels:
   - bioconda
   - conda-forge
