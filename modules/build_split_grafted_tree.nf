@@ -6,6 +6,26 @@ project_dir = projectDir
 publish_dev = file(params.publish_dev)
 
 
+process get_aliases {
+    /**
+    * If no alias file provided, pulls latest
+    */
+
+    output:
+    path "alias_key.json"
+
+    script:
+        if (params.lineage_aliases)
+            """
+            cp ${lineage_aliases} "alias_key.json"
+            """
+        else
+            """
+            wget https://raw.githubusercontent.com/cov-lineages/pango-designation/master/alias_key.json
+            """
+}
+
+
 process split_fasta {
     /**
     * Splits input fasta for subtrees
@@ -16,6 +36,7 @@ process split_fasta {
     input:
     path fasta
     path metadata
+    path aliases
 
     output:
     path "*.fasta", emit: fasta
@@ -29,7 +50,7 @@ process split_fasta {
         --index-column sequence_name \
         --index-field lineage \
         --lineage-csv ${lineage_splits} \
-        --aliases ${lineage_aliases}
+        --aliases ${aliases}
 
     echo '{"text":"' > pre_tree.json
     echo "*${params.whoami}: Ready for ${params.date} tree building*\\n" >> pre_tree.json
@@ -247,7 +268,6 @@ process announce_tree_complete {
 
 
 lineage_splits = file(params.lineage_splits)
-lineage_aliases = file(params.lineage_aliases)
 guide_tree = file(params.guide_tree)
 
 workflow build_split_grafted_tree {
@@ -256,7 +276,10 @@ workflow build_split_grafted_tree {
         metadata
         hashmap
     main:
-        split_fasta(fasta,metadata)
+        if (params.lineage_aliases)
+            lineage_aliases = file(params.lineage_aliases)
+        get_aliases()
+        split_fasta(fasta,metadata,get_aliases.out)
         if (params.webhook)
             announce_split(split_fasta.out.json)
         split_fasta.out.fasta.flatMap { f -> f }.set{ fasta_ch }
