@@ -51,7 +51,7 @@ process extract_tips_fasta {
     * Extracts fasta corresponding to tips in the tree
     * @input fasta, tree
     */
-    label 'retry_increasing_mem_later'
+    label 'retry_increasing_mem'
 
     input:
     path fasta
@@ -70,7 +70,7 @@ process extract_tips_fasta {
         --reject-fasta "${fasta.baseName}.new.fasta" \
         --low-memory
     # hack to make sure nexflow doesn't stall if no new sequences
-    if [  -z \$(grep '[^[:space:]]' "${fasta.baseName}.new.fasta") ]
+    if [  -z \$(head "${fasta.baseName}.new.fasta") ]
     then
         head -n10 "${fasta.baseName}.tips.fasta" > "${fasta.baseName}.new.fasta"
     fi
@@ -103,6 +103,7 @@ process add_reference_to_fasta {
     * @input fasta
     */
     maxForks 100
+    errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 
     input:
     path fasta
@@ -125,6 +126,7 @@ process fasta_to_vcf {
     */
     maxForks 100
     memory { 10.GB * task.attempt + fasta.size() * 3.B }
+    errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 
 
     input:
@@ -146,7 +148,7 @@ process usher_start_tree {
     */
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    maxRetries = 1
+    maxRetries 1
     cpus 8
 
     input:
@@ -183,7 +185,7 @@ process usher_update_tree {
     maxForks 1
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
-    maxRetries = 2
+    maxRetries 2
     cpus 8
 
     input:
@@ -222,7 +224,7 @@ process usher_force_update_tree {
     maxForks 1
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
-    maxRetries = 2
+    maxRetries 2
     cpus 8
 
     input:
