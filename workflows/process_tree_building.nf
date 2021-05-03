@@ -3,6 +3,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
+include { start } from '../modules/start.nf'
 include { mask_and_filter } from '../modules/preprocess.nf'
 include { clean_fasta_and_metadata } from '../modules/preprocess.nf'
 include { clean_fasta_and_metadata_and_tree } from '../modules/preprocess.nf'
@@ -17,6 +18,8 @@ include { publish_trees } from '../modules/publish_trees.nf'
 
 
 workflow {
+    start()
+
     ch_fasta = Channel.fromPath(params.fasta)
     ch_metadata = Channel.fromPath(params.metadata)
     ch_mutations = Channel.fromPath(params.mutations)

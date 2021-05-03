@@ -3,6 +3,7 @@
 nextflow.enable.dsl = 2
 
 // import modules
+include { start } from '../modules/start.nf'
 include { mask_and_filter } from '../modules/preprocess.nf'
 include { clean_fasta_and_metadata } from '../modules/preprocess.nf'
 include { clean_fasta_and_metadata_and_tree } from '../modules/preprocess.nf'
@@ -15,6 +16,7 @@ include { train_usher_pangolin } from '../modules/train_usher_pangolin.nf'
 
 
 workflow {
+    start()
 
     if ( ! params.fasta || ! params.metadata || ! params.lineage_designations ) {
         println("Parameters --fasta, --metadata and --lineage_designations must be provided")
