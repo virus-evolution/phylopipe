@@ -146,6 +146,9 @@ process usher_start_tree {
     * Makes usher mutation annotated tree
     * @input tree, vcf
     */
+    publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
+    publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
+
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 1
@@ -182,6 +185,8 @@ process usher_update_tree {
     * @input tree, vcf
     */
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
+    publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
+
     maxForks 1
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
@@ -221,6 +226,8 @@ process usher_force_update_tree {
     * @input protobuf, vcf
     */
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
+    publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
+
     maxForks 1
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
@@ -393,6 +400,22 @@ workflow usher_expand_tree {
     emit:
         tree = root_tree.out
         protobuf = iteratively_update_tree.out.protobuf
+}
+
+workflow create_usher_tree {
+    take:
+        fasta
+        newick_tree
+    main:
+        dequote_tree(newick_tree)
+        extract_tips_fasta(fasta, dequote_tree.out)
+        masked_reference = mask_reference()
+        add_reference_to_fasta(extract_tips_fasta.out.fasta, masked_reference)
+        fasta_to_vcf(add_reference_to_fasta.out)
+        usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
+    emit:
+        tree = usher_start_tree.out.tree
+        protobuf = usher_start_tree.out.protobuf
 }
 
 workflow soft_update_usher_tree {
