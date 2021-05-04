@@ -181,7 +181,7 @@ process graft_tree {
     * Grafts lineages trees together
     * @input scions, lineages, guide_tree
     */
-    memory { 2.GB * task.attempt + scions.size() * 20.B }
+    memory { 10.GB * task.attempt + scions.size() * 20.B }
 
 
     input:
