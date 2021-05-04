@@ -29,11 +29,10 @@ def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
             else:
                 admn2_counts[location] = 1
 
-    anonymous_locations = []
+    anonymous_locations = set()
     for location in admn2_counts:
         if admn2_counts[location] < 5:
-            anonymous_locations.append(location)
-    anonymous_locations = set(anonymous_locations)
+            anonymous_locations.add(location)
     print("Found %i anonymous_locations" %len(anonymous_locations))
     del admn2_counts
 
