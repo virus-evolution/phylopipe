@@ -74,6 +74,10 @@ process extract_tips_fasta {
     then
         head -n10 "${fasta.baseName}.tips.fasta" > "${fasta.baseName}.new.fasta"
     fi
+    if [  -z \$(head "${fasta.baseName}.tips.fasta") ]
+        then
+            head -n10 "${fasta.baseName}.new.fasta" > "${fasta.baseName}.tips.fasta"
+        fi
     """
 }
 
@@ -187,14 +191,13 @@ process usher_update_tree {
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
 
-    maxForks 1
-    memory { 10.GB * task.attempt + vcf.size() * 3.B }
+    memory { 10.GB * task.attempt + vcf_list.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
     cpus 8
 
     input:
-    path vcf
+    path vcf_list
     path protobuf
 
     output:
@@ -204,17 +207,27 @@ process usher_update_tree {
     script:
     """
     mkdir -p trees
-    usher -i ${protobuf} \
-          --vcf ${vcf} \
+    cp ${protobuf} in.pb
+
+    for vcf in ${vcf_list}
+    do
+      echo "Adding VCF \$vcf to tree\n" >> update_tree.log
+      usher -i in.pb \
+          --vcf \$vcf \
           --threads ${task.cpus} \
-          --save-mutation-annotated-tree trees/${protobuf.baseName}.${params.date}.pb \
+          --save-mutation-annotated-tree out.pb \
           --max-uncertainty-per-sample ${params.max_parsimony_placements} \
           --retain-input-branch-lengths \
           --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
+      echo "Total number of sequences in tree: \$(gotree stats tips -i trees/uncondensed-final-tree.nh | tail -n+2 | wc -l)\n" >> update_tree.log
+      if [ \$? -eq 0 ]; then
+        mv out.pb in.pb
+      fi
+    done
     if [ \$? -eq 0 ]; then
-        cp trees/${protobuf.baseName}.${params.date}.pb ${protobuf}
+        cp in.pb trees/${protobuf.baseName}.${params.date}.pb
         cp trees/uncondensed-final-tree.nh trees/${protobuf.baseName}.USH.tree
     fi
     """
@@ -228,14 +241,13 @@ process usher_force_update_tree {
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
 
-    maxForks 1
-    memory { 10.GB * task.attempt + vcf.size() * 3.B }
+    memory { 10.GB * task.attempt + vcf_list.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
     cpus 8
 
     input:
-    path vcf
+    path vcf_list
     path protobuf
 
     output:
@@ -245,17 +257,28 @@ process usher_force_update_tree {
     script:
     """
     mkdir -p trees
-    usher -i ${protobuf} \
-          --vcf ${vcf} \
-          --threads ${task.cpus} \
-          --save-mutation-annotated-tree trees/${protobuf.baseName}.${params.date}.pb \
-          --retain-input-branch-lengths \
-          --collapse-tree \
-          --write-uncondensed-final-tree \
-          --outdir trees
-    if [ \$? -eq 0 ]; then
-        cp trees/uncondensed-final-tree.nh trees/${protobuf.baseName}.USH.tree
-    fi
+        cp ${protobuf} in.pb
+
+        for vcf in ${vcf_list}
+        do
+          echo "Adding VCF \$vcf to tree\n" >> update_tree.log
+          usher -i in.pb \
+              --vcf \$vcf \
+              --threads ${task.cpus} \
+              --save-mutation-annotated-tree out.pb \
+              --retain-input-branch-lengths \
+              --collapse-tree \
+              --write-uncondensed-final-tree \
+              --outdir trees
+          echo "Total number of sequences in tree: \$(gotree stats tips -i trees/uncondensed-final-tree.nh | tail -n+2 | wc -l)\n" >> update_tree.log
+          if [ \$? -eq 0 ]; then
+            mv out.pb in.pb
+          fi
+        done
+        if [ \$? -eq 0 ]; then
+            cp in.pb trees/${protobuf.baseName}.${params.date}.pb
+            cp trees/uncondensed-final-tree.nh trees/${protobuf.baseName}.USH.tree
+        fi
     """
 }
 
@@ -290,6 +313,7 @@ process announce_tree_complete {
 
     input:
     path tree
+    val label
 
     output:
     path "usher_tree.json"
@@ -298,7 +322,8 @@ process announce_tree_complete {
         if (params.webhook)
             """
             echo '{"text":"' > usher_tree.json
-            echo "*${params.whoami}: Usher expanded tree for ${params.date} complete*\\n" >> usher_tree.json
+            echo "*${params.whoami}: Usher ${label} expanded tree for ${params.date} complete*\\n" >> usher_tree.json
+            echo "Total number of sequences in tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> usher_tree.json
             echo '"}' >> usher_tree.json
 
             echo 'webhook ${params.webhook}'
@@ -307,7 +332,10 @@ process announce_tree_complete {
             """
         else
            """
-           touch "usher_tree.json"
+           echo '{"text":"' > usher_tree.json
+           echo "*${params.whoami}: Usher ${label} expanded tree for ${params.date} complete*\\n" >> usher_tree.json
+           echo "Total number of sequences in tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> usher_tree.json
+           echo '"}' >> usher_tree.json
            """
 }
 
@@ -337,7 +365,9 @@ process announce_protobuf_complete {
             """
         else
            """
-           touch "usher_pb.json"
+           echo '{"text":"' > usher_pb.json
+           echo "*${params.whoami}: Usher protobuf for ${params.date} complete*\\n" >> usher_pb.json
+           echo '"}' >> usher_pb.json
            """
 }
 
@@ -355,8 +385,8 @@ workflow iteratively_update_tree {
         masked_reference = mask_reference()
         add_reference_to_fasta(fasta_chunks, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
-        copy_protobuf(protobuf)
-        usher_update_tree(fasta_to_vcf.out, copy_protobuf.out)
+        fasta_to_vcf.out.collect().set{ vcf_list }
+        usher_update_tree(vcf_list, protobuf)
         final_tree = usher_update_tree.out.tree.last()
         final_protobuf = usher_update_tree.out.protobuf.last()
     emit:
@@ -373,8 +403,8 @@ workflow iteratively_force_update_tree {
         masked_reference = mask_reference()
         add_reference_to_fasta(fasta_chunks, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
-        copy_protobuf(protobuf)
-        usher_force_update_tree(fasta_to_vcf.out, copy_protobuf.out)
+        fasta_to_vcf.out.collect().set{ vcf_list }
+        usher_force_update_tree(vcf_list, protobuf)
         final_tree = usher_force_update_tree.out.tree.last()
         final_protobuf = usher_force_update_tree.out.protobuf.last()
     emit:
@@ -396,26 +426,10 @@ workflow usher_expand_tree {
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf)
         root_tree(iteratively_update_tree.out.tree)
-        announce_tree_complete(root_tree.out)
+        announce_tree_complete(root_tree.out, "initial")
     emit:
         tree = root_tree.out
         protobuf = iteratively_update_tree.out.protobuf
-}
-
-workflow create_usher_tree {
-    take:
-        fasta
-        newick_tree
-    main:
-        dequote_tree(newick_tree)
-        extract_tips_fasta(fasta, dequote_tree.out)
-        masked_reference = mask_reference()
-        add_reference_to_fasta(extract_tips_fasta.out.fasta, masked_reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
-        usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
-    emit:
-        tree = usher_start_tree.out.tree
-        protobuf = usher_start_tree.out.protobuf
 }
 
 workflow soft_update_usher_tree {
@@ -428,7 +442,7 @@ workflow soft_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf)
         root_tree(iteratively_update_tree.out.tree)
-        announce_tree_complete(root_tree.out)
+        announce_tree_complete(root_tree.out, "soft")
     emit:
         tree = root_tree.out
         protobuf = iteratively_update_tree.out.protobuf
@@ -444,6 +458,7 @@ workflow hard_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf)
         root_tree(iteratively_force_update_tree.out.tree)
+        announce_tree_complete(root_tree.out, "hard")
     emit:
         tree = root_tree.out
         protobuf = iteratively_force_update_tree.out.protobuf

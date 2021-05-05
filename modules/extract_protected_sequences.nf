@@ -136,7 +136,8 @@ workflow extract_protected_sequences {
         }
 
         if ( params.lineage_designations ) {
-            fetch_designations(fasta, metadata)
+            lineage_designations = file(params.lineage_designations)
+            fetch_designations(fasta, lineage_designations)
             designations_ch = fetch_designations.out
         } else {
             designations_ch = Channel.empty()

@@ -10,7 +10,7 @@ include { clean_fasta_and_metadata_and_tree } from '../modules/preprocess.nf'
 include { extract_protected_sequences } from '../modules/extract_protected_sequences.nf'
 include { subsample_for_tree } from '../modules/subsample_for_tree.nf'
 include { build_split_grafted_tree } from '../modules/build_split_grafted_tree.nf'
-include { create_usher_tree } from '../modules/usher_expand_tree.nf'
+include { usher_expand_tree } from '../modules/usher_expand_tree.nf'
 include { soft_update_usher_tree } from '../modules/usher_expand_tree.nf'
 include { hard_update_usher_tree } from '../modules/usher_expand_tree.nf'
 include { post_process_tree } from '../modules/post_process_tree.nf'
@@ -51,10 +51,9 @@ workflow {
                 ch_clean_tree = build_split_grafted_tree.out.tree
             }
         }
-        create_usher_tree(ch_clean_fasta, ch_clean_tree)
-        soft_update_usher_tree(ch_clean_fasta, create_usher_tree.out.tree, create_usher_tree.out.protobuf)
-        ch_protobuf = soft_update_usher_tree.out.protobuf
-        ch_expanded_tree = soft_update_usher_tree.out.tree
+        usher_expand_tree(ch_clean_fasta, ch_clean_tree)
+        ch_protobuf = usher_expand_tree.out.protobuf
+        ch_expanded_tree = usher_expand_tree.out.tree
 
     } else if ( params.newick_tree ) {
         ch_protobuf_raw = Channel.fromPath(params.protobuf)

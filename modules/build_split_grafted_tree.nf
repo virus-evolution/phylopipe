@@ -254,6 +254,7 @@ process announce_tree_complete {
             """
             echo '{"text":"' > grafted_tree.json
             echo "*${params.whoami}: Initial grafted tree for ${params.date} complete*\\n" >> grafted_tree.json
+            echo "Total number of sequences in tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> grafted_tree.json
             echo '"}' >> grafted_tree.json
 
             echo 'webhook ${params.webhook}'
@@ -261,9 +262,12 @@ process announce_tree_complete {
             curl -X POST -H "Content-type: application/json" -d @grafted_tree.json ${params.webhook}
             """
         else
-           """
-           touch "grafted_tree.json"
-           """
+            """
+            echo '{"text":"' > grafted_tree.json
+            echo "*${params.whoami}: Initial grafted tree for ${params.date} complete*\\n" >> grafted_tree.json
+            echo "Total number of sequences in tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> grafted_tree.json
+            echo '"}' >> grafted_tree.json
+            """
 }
 
 

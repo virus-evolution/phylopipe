@@ -403,7 +403,7 @@ process announce_annotation_complete {
         if (params.webhook)
             """
             echo '{"text":"' > full_tree.json
-            echo "*${params.whoami}: Hashmap expanded and annotated tree for ${params.date} complete*\\n" >> full_tree.json
+            echo "*${params.whoami}: Annotated tree for ${params.date} complete*\\n" >> full_tree.json
             echo '"}' >> full_tree.json
 
             echo 'webhook ${params.webhook}'
