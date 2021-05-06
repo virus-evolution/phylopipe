@@ -70,14 +70,14 @@ process extract_tips_fasta {
         --reject-fasta "${fasta.baseName}.new.fasta" \
         --low-memory
     # hack to make sure nexflow doesn't stall if no new sequences
-    if [  -z \$(head "${fasta.baseName}.new.fasta") ]
+    if [  -z \$(head -n1 "${fasta.baseName}.new.fasta") ]
     then
         head -n10 "${fasta.baseName}.tips.fasta" > "${fasta.baseName}.new.fasta"
     fi
-    if [  -z \$(head "${fasta.baseName}.tips.fasta") ]
-        then
-            head -n10 "${fasta.baseName}.new.fasta" > "${fasta.baseName}.tips.fasta"
-        fi
+    if [  -z \$(head -n1 "${fasta.baseName}.tips.fasta") ]
+    then
+        head -n10 "${fasta.baseName}.new.fasta" > "${fasta.baseName}.tips.fasta"
+    fi
     """
 }
 
@@ -418,12 +418,19 @@ workflow usher_expand_tree {
         add_reference_to_fasta(extract_tips_fasta.out.fasta, masked_reference)
         fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
-        iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf)
-        root_tree(iteratively_update_tree.out.tree)
+        if ( params.update_protobuf ){
+            iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf)
+            out_pb = iteratively_update_tree.out.protobuf
+            out_tree = iteratively_update_tree.out.tree
+        } else {
+            out_pb = usher_start_tree.out.protobuf
+            out_tree = usher_start_tree.out.tree
+        }
+        root_tree(out_tree)
         announce_tree_complete(root_tree.out, "initial")
     emit:
         tree = root_tree.out
-        protobuf = iteratively_update_tree.out.protobuf
+        protobuf = out_pb
 }
 
 workflow soft_update_usher_tree {

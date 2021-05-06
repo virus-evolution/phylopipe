@@ -145,8 +145,9 @@ workflow extract_protected_sequences {
 
         fetch_outgroups(fasta)
         fetch_outgroups.out.concat( recent_ch, designations_ch ).set { protected_ch }
+        protected_ch.collectFile(name: "force.fa").set { output_ch }
     emit:
-        protected_ch
+        output_ch
 }
 
 
