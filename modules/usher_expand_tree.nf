@@ -156,6 +156,7 @@ process usher_start_tree {
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 1
+    cpus ${params.max_cpus}
 
     input:
     path vcf
@@ -170,6 +171,7 @@ process usher_start_tree {
     mkdir -p trees
     usher --tree ${tree} \
           --vcf ${vcf} \
+          --threads ${task.cpus} \
           --save-mutation-annotated-tree trees/${tree.baseName}.pb \
           --max-uncertainty-per-sample ${params.max_parsimony_placements} \
           --retain-input-branch-lengths \
@@ -192,6 +194,7 @@ process usher_update_tree {
     memory { 10.GB * task.attempt + vcf_list.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
+    cpus ${params.max_cpus}
 
     input:
     path vcf_list
@@ -211,6 +214,7 @@ process usher_update_tree {
       echo "Adding VCF \$vcf to tree\n" >> update_tree.log
       usher -i in.pb \
           --vcf \$vcf \
+          --threads ${task.cpus} \
           --save-mutation-annotated-tree out.pb \
           --max-uncertainty-per-sample ${params.max_parsimony_placements} \
           --retain-input-branch-lengths \
@@ -240,6 +244,7 @@ process usher_force_update_tree {
     memory { 10.GB * task.attempt + vcf_list.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
+    cpus ${params.max_cpus}
 
     input:
     path vcf_list
@@ -259,6 +264,7 @@ process usher_force_update_tree {
           echo "Adding VCF \$vcf to tree\n" >> update_tree.log
           usher -i in.pb \
               --vcf \$vcf \
+              --threads ${task.cpus} \
               --save-mutation-annotated-tree out.pb \
               --retain-input-branch-lengths \
               --collapse-tree \
