@@ -156,7 +156,7 @@ process usher_start_tree {
     memory { 10.GB * task.attempt + vcf.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 1
-    cpus ${params.max_cpus}
+    cpus {params.max_cpus}
 
     input:
     path vcf
@@ -194,7 +194,7 @@ process usher_update_tree {
     memory { 10.GB * task.attempt + vcf_list.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
-    cpus ${params.max_cpus}
+    cpus {params.max_cpus}
 
     input:
     path vcf_list
@@ -244,7 +244,7 @@ process usher_force_update_tree {
     memory { 10.GB * task.attempt + vcf_list.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
-    cpus ${params.max_cpus}
+    cpus {params.max_cpus}
 
     input:
     path vcf_list
