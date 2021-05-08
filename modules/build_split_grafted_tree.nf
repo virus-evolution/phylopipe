@@ -2,6 +2,9 @@
 
 nextflow.enable.dsl = 2
 
+include { expand_hashmap } from '../modules/hash.nf'
+
+
 project_dir = projectDir
 publish_dev = file(params.publish_dev)
 
@@ -205,34 +208,6 @@ process graft_tree {
         --scion-annotation-name scion_lineage \
         --annotate-scions ${lineages}
     #touch cog_gisaid_grafted.tree
-    """
-}
-
-
-process expand_hashmap {
-    /**
-    * Adds back in identical sequences using hashmap
-    * @input tree, hashmap
-    */
-    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy'
-
-
-    input:
-    path tree
-    path hashmap
-
-    output:
-    path "${tree.baseName}.expanded.tree"
-
-    script:
-    """
-    jclusterfunk insert \
-        -i "${tree}" \
-        --metadata ${hashmap} \
-        --unique-only \
-        --ignore-missing \
-        --format newick \
-        -o "${tree.baseName}.expanded.tree"
     """
 }
 
