@@ -174,7 +174,6 @@ process usher_start_tree {
           --threads ${task.cpus} \
           --save-mutation-annotated-tree trees/${tree.baseName}.pb \
           --max-uncertainty-per-sample ${params.max_parsimony_placements} \
-          --retain-input-branch-lengths \
           --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
@@ -217,7 +216,6 @@ process usher_update_tree {
           --threads ${task.cpus} \
           --save-mutation-annotated-tree out.pb \
           --max-uncertainty-per-sample ${params.max_parsimony_placements} \
-          --retain-input-branch-lengths \
           --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
@@ -266,7 +264,6 @@ process usher_force_update_tree {
               --vcf \$vcf \
               --threads ${task.cpus} \
               --save-mutation-annotated-tree out.pb \
-              --retain-input-branch-lengths \
               --collapse-tree \
               --write-uncondensed-final-tree \
               --outdir trees
