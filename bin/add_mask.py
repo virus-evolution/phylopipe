@@ -43,9 +43,9 @@ def apply_mask(in_fasta, out_fasta, mask):
     with open(in_fasta, "r") as fasta_in, \
          open(out_fasta, "w") as fasta_out:
 
-        for record in SeqIO.parse(fasta_in, 'fasta'):
-            ID = record.id
-            seq = str(record.seq)
+        for record in SeqIO.index(fasta_in, 'fasta'):
+            ID = record
+            seq = str(record[ID].seq)
 
             for entry in mask_info:
                 regex = mask_info[entry]['regex']
