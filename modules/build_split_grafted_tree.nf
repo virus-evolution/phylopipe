@@ -212,6 +212,26 @@ process graft_tree {
 }
 
 
+process sort_and_collapse {
+    /**
+    * Runs gotree to collapse tiny branches
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "cog_gisaid_full.tree"
+
+    script:
+    """
+    gotree rotate sort -i ${tree} -o rotated.tree
+    gotree collapse length --length ${params.collapse} -i rotated.tree -o cog_gisaid_full.tree
+    """
+}
+
+
 process announce_tree_complete {
     /**
     * Summarizes splitting
@@ -304,9 +324,10 @@ workflow finish_split_grafted_tree {
         label_ch = Channel.from("FT")
         graft_tree(trees_ch, lineages_ch, label_ch)
         expand_hashmap(graft_tree.out, hashmap)
-        announce_tree_complete(expand_hashmap.out)
+        sort_and_collapse(expand_hashmap.out)
+        announce_tree_complete(sort_and_collapse.out)
     emit:
-        tree = expand_hashmap.out
+        tree = sort_and_collapse.out
 }
 
 

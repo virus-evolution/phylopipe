@@ -5,24 +5,6 @@ nextflow.enable.dsl = 2
 project_dir = projectDir
 publish_dev = file(params.publish_dev)
 
-process sort_and_collapse {
-    /**
-    * Runs gotree to collapse tiny branches
-    * @input tree
-    */
-
-    input:
-    path tree
-
-    output:
-    path "cog_gisaid_full.tree"
-
-    script:
-    """
-    gotree rotate sort -i ${tree} -o rotated.tree
-    gotree collapse length --length ${params.collapse} -i rotated.tree -o cog_gisaid_full.tree
-    """
-}
 
 process annotate_tree_uk {
     /**
@@ -484,16 +466,15 @@ workflow post_process_tree {
         tree
         metadata
     main:
-        sort_and_collapse(tree)
         if ( params.cog_uk ) {
-           get_cog_uk_phylotypes(sort_and_collapse.out, metadata)
+           get_cog_uk_phylotypes(tree, metadata)
            nexus_ch = get_cog_uk_phylotypes.out.nexus_tree
            newick_ch = get_cog_uk_phylotypes.out.newick_tree
            metadata_ch = get_cog_uk_phylotypes.out.metadata
         } else {
-           annotate_tree(sort_and_collapse.out, metadata)
+           annotate_tree(tree, metadata)
            nexus_ch = annotate_tree.out
-           newick_ch = sort_and_collapse.out
+           newick_ch = tree
            metadata_ch = metadata
 
         }
