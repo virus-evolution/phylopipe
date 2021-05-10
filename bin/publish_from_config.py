@@ -144,7 +144,7 @@ def publish_file(outdir, info_dict, seed):
     else:
         cmd_list = ["fastafunk add_columns --in-metadata", info_dict["min_csv"],
             "--in-data", info_dict["full_csv"], "--index-column sequence_name",
-            "--join-on sequence_name --out-metadata", info_dict["intermediate_csv"]]
+            "--join-on sequence_name --force-overwrite --out-metadata", info_dict["intermediate_csv"]]
         syscall(cmd_list)
         if info_dict["metadata_fields"]:
                 cmd_list.append("--new-columns")
