@@ -39,13 +39,12 @@ def parse_mask_file(file):
 
 def apply_mask(in_fasta, out_fasta, mask):
     mask_info = parse_mask_file(mask)
+    records = SeqIO.index(in_fasta, "fasta")
 
-    with open(in_fasta, "r") as fasta_in, \
-         open(out_fasta, "w") as fasta_out:
-
-        for record in SeqIO.index(fasta_in, 'fasta'):
+    with open(out_fasta, "w") as fasta_out:
+        for record in records:
             ID = record
-            seq = str(record[ID].seq)
+            seq = str(records[ID].seq)
 
             for entry in mask_info:
                 regex = mask_info[entry]['regex']
