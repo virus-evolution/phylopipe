@@ -216,7 +216,6 @@ process usher_update_tree {
           --threads ${task.cpus} \
           --save-mutation-annotated-tree out.pb \
           --max-uncertainty-per-sample ${params.max_parsimony_placements} \
-          --collapse-tree \
           --write-uncondensed-final-tree \
           --outdir trees
       echo "Total number of sequences in tree: \$(gotree stats tips -i trees/uncondensed-final-tree.nh | tail -n+2 | wc -l)\n" >> update_tree.log
@@ -264,7 +263,6 @@ process usher_force_update_tree {
               --vcf \$vcf \
               --threads ${task.cpus} \
               --save-mutation-annotated-tree out.pb \
-              --collapse-tree \
               --write-uncondensed-final-tree \
               --outdir trees
           echo "Total number of sequences in tree: \$(gotree stats tips -i trees/uncondensed-final-tree.nh | tail -n+2 | wc -l)\n" >> update_tree.log
