@@ -418,7 +418,7 @@ process annotate_tree {
       -i ${tree} \
       -c sequence_name \
       -m ${metadata} \
-      --tip-attributes is_uk country sample_date epi_week lineage covv_accession_id \
+      --tip-attributes ${params.annotations} \
       -o "annotated.tree" \
       --ignore-missing
     """

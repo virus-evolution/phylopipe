@@ -125,6 +125,7 @@ process clean_metadata {
     $project_dir/../bin/apply_map.py \
           --in-metadata ${metadata} \
           --in-map "${map}" \
+          --to-clean ${params.annotations} \
           --out-metadata "${metadata.baseName}.clean.csv"
     """
 }

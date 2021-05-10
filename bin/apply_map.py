@@ -3,12 +3,14 @@
 from Bio import SeqIO
 import csv
 import argparse
+import unicodedata
 
 def parse_args():
     parser = argparse.ArgumentParser(description="""Filter UK sequences based on metadata""",
                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--in-metadata', dest = 'in_metadata', required=True, help='CSV: if provided hash keeps most recent sequence as representative')
     parser.add_argument('--in-map', dest = 'in_map', required=True, help='Map old sequence_name to new')
+    parser.add_argument('--to-clean', dest = 'to_clean', required=False, nargs='+', help='List of metadata fields to clean up')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV: output')
 
     args = parser.parse_args()
@@ -30,8 +32,13 @@ def parse_map(map_file):
             line = map_handle.readline()
     return(map)
 
+def strip_accents(s):
+    if not s.isalnum():
+        s = ''.join((c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn'))
+        s = s.replace("'", "_")
+    return s
 
-def correct(in_metadata, in_map, out_metadata):
+def correct(in_metadata, in_map, to_clean, out_metadata):
     map = parse_map(in_map)
 
     with open(in_metadata, 'r') as csv_in, \
@@ -39,6 +46,12 @@ def correct(in_metadata, in_map, out_metadata):
 
         reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
         fieldnames = reader.fieldnames
+        clean_columns = []
+        for column in to_clean:
+            if column not in fieldnames:
+                print("Column '%s' not in input" %column)
+            else:
+                clean_columns.append(column)
         writer = csv.DictWriter(csv_out, fieldnames = fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
         writer.writeheader()
 
@@ -46,12 +59,14 @@ def correct(in_metadata, in_map, out_metadata):
         for row in reader:
             if row[fasta_header] in map:
                 row[fasta_header] = map[row[fasta_header]]
+            for column in clean_columns:
+                row[column] = strip_accents(row[column])
             writer.writerow(row)
 
 
 def main():
     args = parse_args()
-    correct(args.in_metadata, args.in_map, args.out_metadata)
+    correct(args.in_metadata, args.in_map, args.to_clean, args.out_metadata)
 
 if __name__ == '__main__':
     main()

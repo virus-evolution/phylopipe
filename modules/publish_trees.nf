@@ -14,7 +14,7 @@ process publish_master_metadata {
     * @output metadata
     */
 
-    publishDir "${publish_dev}", pattern: "*/*.csv", mode: 'copy'
+    publishDir "${publish_dev}", pattern: "*/*.csv", mode: 'copy', overwrite: true
 
     input:
     path metadata
@@ -97,7 +97,7 @@ process publish_tree_recipes {
     errorStrategy 'retry'
     memory = {6.GB * task.attempt}
     maxRetries = 2
-    publishDir "${publish_dir}/", pattern: "*/*.*", mode: 'copy', overwrite: false
+    publishDir "${publish_dir}/", pattern: "*/*.*", mode: 'copy', overwrite: true
 
     input:
     tuple path(fasta),path(min_metadata),path(metadata),path(mutations),path(constellations),path(newick_tree),path(nexus_tree),path(recipe)
