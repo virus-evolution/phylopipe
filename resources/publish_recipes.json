@@ -19,7 +19,7 @@
         "is_cog_uk"
       ],
       "mutations": true,
-      "drop_index": "nucleotide_mutations",
+      "drop_index": "mutations",
       "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK adm2=adm2_raw",
       "drop_index": "is_cog_uk"
     },
@@ -42,7 +42,7 @@
         "primary_uk_lineage"
       ],
       "mutations": true,
-      "drop_index": "nucleotide_mutations",
+      "drop_index": "mutations",
       "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK adm2=adm2_raw"
     }
   ],
