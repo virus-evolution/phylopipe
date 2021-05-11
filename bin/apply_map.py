@@ -10,7 +10,7 @@ def parse_args():
                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--in-metadata', dest = 'in_metadata', required=True, help='CSV: if provided hash keeps most recent sequence as representative')
     parser.add_argument('--in-map', dest = 'in_map', required=True, help='Map old sequence_name to new')
-    parser.add_argument('--to-clean', dest = 'to_clean', required=False, nargs='+', help='List of metadata fields to clean up')
+    parser.add_argument('--to-clean', dest = 'to_clean', required=False, nargs='+', default=[], help='List of metadata fields to clean up')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV: output')
 
     args = parser.parse_args()
