@@ -300,6 +300,30 @@ process root_tree {
     """
 }
 
+
+process rescale_branch_lengths {
+    /**
+    * Scales the integer branch lengths to in [0,1]
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "${tree.baseName}.scaled.tree"
+
+    script:
+    """
+    jclusterfunk scale \
+        --format newick \
+        -i ${tree} \
+        -o ${tree.baseName}.scaled.tree \
+        --factor 0.00003344146 \
+        --threshold ${params.collapse}
+    """
+}
+
 process announce_tree_complete {
     /**
     * Announces usher updated tree
@@ -428,9 +452,10 @@ workflow usher_expand_tree {
             out_tree = usher_start_tree.out.tree
         }
         root_tree(out_tree)
-        announce_tree_complete(root_tree.out, "initial")
+        rescale_branch_lengths(root_tree.out)
+        announce_tree_complete(rescale_branch_lengths.out, "initial")
     emit:
-        tree = root_tree.out
+        tree = rescale_branch_lengths.out
         protobuf = out_pb
 }
 
@@ -444,9 +469,10 @@ workflow soft_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf)
         root_tree(iteratively_update_tree.out.tree)
-        announce_tree_complete(root_tree.out, "soft")
+        rescale_branch_lengths(root_tree.out)
+        announce_tree_complete(rescale_branch_lengths.out, "soft")
     emit:
-        tree = root_tree.out
+        tree = rescale_branch_lengths.out
         protobuf = iteratively_update_tree.out.protobuf
 }
 
@@ -460,9 +486,10 @@ workflow hard_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf)
         root_tree(iteratively_force_update_tree.out.tree)
-        announce_tree_complete(root_tree.out, "hard")
+        rescale_branch_lengths(root_tree.out)
+        announce_tree_complete(rescale_branch_lengths.out, "hard")
     emit:
-        tree = root_tree.out
+        tree = rescale_branch_lengths.out
         protobuf = iteratively_force_update_tree.out.protobuf
 }
 
