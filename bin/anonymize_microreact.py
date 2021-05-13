@@ -60,7 +60,7 @@ def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
     tree = open(tree_in, 'r').read()
 
     for new, old in anonymous_names.items():
-        tree = tree.replace("\'" + old + "\'", "\'" + new + "\'")
+        tree = tree.replace(old, new)
 
     tree_out = open(tree_out, 'w')
     tree_out.write(tree)
