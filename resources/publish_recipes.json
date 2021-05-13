@@ -21,7 +21,6 @@
       "mutations": true,
       "drop_index": "mutations",
       "where": "primary_uk_lineage=microreact_lineage adm1=adm1_UK adm2=adm2_raw",
-      "drop_index": "is_cog_uk"
     },
     {
       "suffix": "private",
