@@ -5,6 +5,7 @@ import random
 import copy
 import argparse
 import csv
+import re
 
 def get_random_name():
     r = random.randint(0, 999999)
@@ -52,15 +53,36 @@ def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
                 anonymous_name = get_random_name()
                 while anonymous_name in anonymous_names:
                     anonymous_name = get_random_name()
-                anonymous_names[anonymous_name] = row['sequence_name']
+                anonymous_names[row['sequence_name']] = anonymous_name
                 row['sequence_name'] = anonymous_name
 
             writer.writerow(row)
     print("Found %i anonymous_names" %len(anonymous_names))
     tree = open(tree_in, 'r').read()
+    tip = re.compile("[A-Za-z0-9_-]+/[A-Za-z0-9_-]+/202[01]", re.U)
+    start_pos = 0
+    new_strings = []
+    m = tip.search(tree, start_pos)
+    count = 0
+    while m:
+        #if count % 10 == 0:
+        #    print(count, start_pos, m.start(), m.end())
+        new_strings.append(tree[start_pos:m.start()])
+        if m.group(0) in anonymous_names:
+            count += 1
+            new_strings.append(anonymous_names[m.group(0)])
+            del anonymous_names[m.group(0)]
+        else:
+            new_strings.append(m.group(0))
+        start_pos = m.end()
+        m = tip.search(tree, start_pos)
 
-    for new, old in anonymous_names.items():
-        tree = tree.replace(old, new)
+    new_strings.append(tree[start_pos:])
+    print("Replaced", count, "sequence_names in tree")
+    tree = "".join(new_strings)
+
+    for old, new in anonymous_names.items():
+        tree = re.sub(old, new, tree)
 
     tree_out = open(tree_out, 'w')
     tree_out.write(tree)
