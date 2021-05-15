@@ -131,6 +131,34 @@ process clean_metadata {
 }
 
 
+process prune_tree_with_metadata {
+    /**
+    * Removes tips of tree with no matching metadata
+    * @input metadata, tree
+    */
+
+    input:
+    path metadata
+    path tree
+
+    output:
+    path "${tree.baseName}.pruned.newick"
+
+    script:
+    if ( params.prune )
+    """
+    $project_dir/../bin/prune_tree.py \
+          --metadata ${metadata} \
+          --in-tree "${tree}" \
+          --out-tree "${tree.baseName}.pruned.newick"
+    """
+    else
+    """
+    cp ${tree} "${tree.baseName}.pruned.newick"
+    """
+}
+
+
 process announce_summary {
     /**
     * Summarizes subsampling into JSON
