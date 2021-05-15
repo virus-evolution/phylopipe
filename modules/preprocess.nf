@@ -229,10 +229,11 @@ workflow clean_fasta_and_metadata_and_tree {
     main:
         clean_fasta_headers_with_tree(fasta, tree)
         clean_metadata(metadata, clean_fasta_headers_with_tree.out.map)
+        prune_tree_with_metadata(clean_metadata.out, clean_fasta_headers_with_tree.out.tree)
     emit:
         fasta = clean_fasta_headers_with_tree.out.fasta
         metadata = clean_metadata.out
-        tree = clean_fasta_headers_with_tree.out.tree
+        tree = prune_tree_with_metadata.out
 }
 
 workflow {
