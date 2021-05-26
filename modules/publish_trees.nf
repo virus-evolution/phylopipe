@@ -65,7 +65,45 @@ process prune_unreliable_tips {
     """
 }
 
+process announce_unreliable_pruned_tree {
+    /**
+    * Announces unreliable pruned tree
+    * @input tree, tips, pruned_tree
+    */
 
+    input:
+    path tree
+    path tips
+    path pruned_tree
+
+    output:
+    path "unreliable_pruned_tree.json"
+
+    script:
+        if (params.webhook)
+            """
+            echo '{"text":"' > unreliable_pruned_tree.json
+            echo "*${params.whoami}: Pruned tree with unreliable tips removed for ${params.date} complete*\\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in unreliable list: \$(head -n+1 ${tips} | wc -l)\n" >> unreliable_pruned_tree.json
+            echo '"}' >> metadata_pruned_tree.json
+
+            echo 'webhook ${params.webhook}'
+
+            curl -X POST -H "Content-type: application/json" -d @unreliable_pruned_tree.json ${params.webhook}
+            """
+        else
+           """
+            echo '{"text":"' > unreliable_pruned_tree.json
+            echo "*${params.whoami}: Pruned tree with unreliable tips removed for ${params.date} complete*\\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in unreliable list: \$(head -n+1 ${tips} | wc -l)\n" >> unreliable_pruned_tree.json
+            echo '"}' >> metadata_pruned_tree.json
+
+           """
+}
 
 process publish_master_metadata {
     /**
@@ -243,6 +281,7 @@ workflow publish_trees {
         publish_master_metadata(metadata,params.category)
         get_unreliable_tips(metadata)
         prune_unreliable_tips(newick_tree,get_unreliable_tips.out).set{ pruned_newick_tree }
+        announce_unreliable_pruned_tree(newick_tree, get_unreliable_tips.out, pruned_newick_tree)
         fetch_min_metadata(fasta,metadata)
         split_recipes(publish_recipes)
         recipe_ch = split_recipes.out.flatten()
