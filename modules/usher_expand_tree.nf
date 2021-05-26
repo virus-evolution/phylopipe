@@ -202,6 +202,7 @@ process usher_update_tree {
     output:
     path "trees/${protobuf.baseName}.USH.tree", emit: tree
     path "trees/*.pb", emit: protobuf
+    path "usher.log", emit: usher_log
 
     script:
     """
@@ -217,7 +218,7 @@ process usher_update_tree {
           --save-mutation-annotated-tree out.pb \
           --max-uncertainty-per-sample ${params.max_parsimony_placements} \
           --write-uncondensed-final-tree \
-          --outdir trees
+          --outdir trees 2>> usher.log
       echo "Total number of sequences in tree: \$(gotree stats tips -i trees/uncondensed-final-tree.nh | tail -n+2 | wc -l)\n" >> update_tree.log
       if [ \$? -eq 0 ]; then
         mv out.pb in.pb
@@ -226,6 +227,7 @@ process usher_update_tree {
     if [ \$? -eq 0 ]; then
         cp in.pb trees/${protobuf.baseName}.${params.date}.pb
         cp trees/uncondensed-final-tree.nh trees/${protobuf.baseName}.USH.tree
+        cat usher.log | grep "Number of parsimony-optimal placements"
     fi
     """
 }
@@ -250,6 +252,7 @@ process usher_force_update_tree {
     output:
     path "trees/${protobuf.baseName}.USH.tree", emit: tree
     path "trees/*.pb", emit: protobuf
+    path "usher.log", emit: usher_log
 
     script:
     """
@@ -264,7 +267,7 @@ process usher_force_update_tree {
               --threads ${task.cpus} \
               --save-mutation-annotated-tree out.pb \
               --write-uncondensed-final-tree \
-              --outdir trees
+              --outdir trees 2>> usher.log
           echo "Total number of sequences in tree: \$(gotree stats tips -i trees/uncondensed-final-tree.nh | tail -n+2 | wc -l)\n" >> update_tree.log
           if [ \$? -eq 0 ]; then
             mv out.pb in.pb
@@ -274,6 +277,35 @@ process usher_force_update_tree {
             cp in.pb trees/${protobuf.baseName}.${params.date}.pb
             cp trees/uncondensed-final-tree.nh trees/${protobuf.baseName}.USH.tree
         fi
+    """
+}
+
+process add_usher_metadata {
+    /**
+    * Adds metadata from usher log
+    * @input log, metadata
+    */
+
+    input:
+    path usher_log
+    path metadata
+
+    output:
+    path "${metadata.baseName}.usher.csv"
+
+    script:
+    """
+    $project_dir/../bin/parse_usher_log.py \
+                --in ${usher_log} \
+                --out "usher_log.csv"
+
+    fastafunk add_columns \
+                  --in-metadata ${metadata} \
+                  --in-data "usher_log.csv" \
+                  --index-column sequence_name \
+                  --join-on sequence_name \
+                  --new-columns parsimony_score num_parsimony_optimal_placements is_unreliable_in_tree \
+                  --out-metadata "${metadata.baseName}.usher.csv"
     """
 }
 
@@ -399,6 +431,7 @@ workflow iteratively_update_tree {
     take:
         fasta
         protobuf
+        metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
         masked_reference = mask_reference()
@@ -406,17 +439,20 @@ workflow iteratively_update_tree {
         fasta_to_vcf(add_reference_to_fasta.out)
         fasta_to_vcf.out.collect().set{ vcf_list }
         usher_update_tree(vcf_list, protobuf)
+        add_usher_metadata(usher_update_tree.out.usher_log.last(),metadata)
         final_tree = usher_update_tree.out.tree.last()
         final_protobuf = usher_update_tree.out.protobuf.last()
     emit:
         tree = final_tree
         protobuf = final_protobuf
+        metadata = add_usher_metadata.out
 }
 
 workflow iteratively_force_update_tree {
     take:
         fasta
         protobuf
+        metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
         masked_reference = mask_reference()
@@ -424,11 +460,13 @@ workflow iteratively_force_update_tree {
         fasta_to_vcf(add_reference_to_fasta.out)
         fasta_to_vcf.out.collect().set{ vcf_list }
         usher_force_update_tree(vcf_list, protobuf)
+        add_usher_metadata(usher_force_update_tree.out.usher_log.last(),metadata)
         final_tree = usher_force_update_tree.out.tree.last()
         final_protobuf = usher_force_update_tree.out.protobuf.last()
     emit:
         tree = final_tree
         protobuf = final_protobuf
+        metadata = add_usher_metadata.out
 }
 
 
@@ -436,6 +474,7 @@ workflow usher_expand_tree {
     take:
         fasta
         newick_tree
+        metadata
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
@@ -444,12 +483,14 @@ workflow usher_expand_tree {
         fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         if ( params.update_protobuf ){
-            iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf)
+            iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf,metadata)
             out_pb = iteratively_update_tree.out.protobuf
             out_tree = iteratively_update_tree.out.tree
+            out_metadata = iteratively_update_tree.out.metadata
         } else {
             out_pb = usher_start_tree.out.protobuf
             out_tree = usher_start_tree.out.tree
+            out_metadata = metadata
         }
         root_tree(out_tree)
         rescale_branch_lengths(root_tree.out)
@@ -457,6 +498,7 @@ workflow usher_expand_tree {
     emit:
         tree = rescale_branch_lengths.out
         protobuf = out_pb
+        metadata = out_metadata
 }
 
 workflow soft_update_usher_tree {
@@ -464,16 +506,18 @@ workflow soft_update_usher_tree {
         fasta
         newick_tree
         protobuf
+        metadata
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf)
+        iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf,metadata)
         root_tree(iteratively_update_tree.out.tree)
         rescale_branch_lengths(root_tree.out)
         announce_tree_complete(rescale_branch_lengths.out, "soft")
     emit:
         tree = rescale_branch_lengths.out
         protobuf = iteratively_update_tree.out.protobuf
+        metadata = iteratively_update_tree.out.metadata
 }
 
 workflow hard_update_usher_tree {
@@ -481,16 +525,18 @@ workflow hard_update_usher_tree {
         fasta
         newick_tree
         protobuf
+        metadata
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf)
+        iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf,metadata)
         root_tree(iteratively_force_update_tree.out.tree)
         rescale_branch_lengths(root_tree.out)
         announce_tree_complete(rescale_branch_lengths.out, "hard")
     emit:
         tree = rescale_branch_lengths.out
         protobuf = iteratively_force_update_tree.out.protobuf
+        metadata = iteratively_force_update_tree.out.metadata
 }
 
 workflow build_protobuf {
@@ -513,16 +559,19 @@ workflow update_protobuf {
     take:
         fasta
         protobuf
+        metadata
     main:
-        iteratively_force_update_tree(fasta,protobuf)
+        iteratively_force_update_tree(fasta,protobuf,metadata)
         announce_protobuf_complete(iteratively_force_update_tree.out.protobuf)
     emit:
         protobuf = iteratively_force_update_tree.out.protobuf
+        metadata = iteratively_force_update_tree.out.metadata
 }
 
 workflow {
     fasta = file(params.fasta)
     newick_tree = file(params.newick_tree)
+    metadata = file(params.metadata)
 
-    usher_expand_tree(fasta, newick_tree)
+    usher_expand_tree(fasta, newick_tree, metadata)
 }

@@ -47,29 +47,36 @@ workflow {
             build_split_grafted_tree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata, subsample_for_tree.out.hashmap)
             if ( params.skip_usher ){
                 ch_full_tree = build_split_grafted_tree.out.tree
+                ch_full_metadata = ch_clean_metadata
             } else {
                 ch_clean_tree = build_split_grafted_tree.out.tree
             }
         }
-        usher_expand_tree(ch_clean_fasta, ch_clean_tree)
-        ch_protobuf = usher_expand_tree.out.protobuf
-        ch_expanded_tree = usher_expand_tree.out.tree
+        if ( ! params.skip_usher ){
+            usher_expand_tree(ch_clean_fasta, ch_clean_tree, ch_clean_metadata)
+            ch_protobuf = usher_expand_tree.out.protobuf
+            ch_expanded_tree = usher_expand_tree.out.tree
+            ch_expanded_metadata = usher_expand_tree.out.metadata
+        }
 
     } else if ( params.newick_tree && params.update_protobuf ) {
         ch_protobuf_raw = Channel.fromPath(params.protobuf)
-        soft_update_usher_tree(ch_clean_fasta, ch_clean_tree, ch_protobuf_raw)
+        soft_update_usher_tree(ch_clean_fasta, ch_clean_tree, ch_protobuf_raw, ch_clean_metadata)
         ch_protobuf = soft_update_usher_tree.out.protobuf
         ch_expanded_tree = soft_update_usher_tree.out.tree
+        ch_expanded_metadata = soft_update_usher_tree.out.metadata
     } else if ( params.newick_tree ) {
         ch_protobuf = Channel.fromPath(params.protobuf)
         ch_expanded_tree = ch_clean_tree
+        ch_expanded_metadata = ch_clean_metadata
     }
 
     if (! params.skip_usher ) {
-        hard_update_usher_tree(ch_protected, ch_expanded_tree, ch_protobuf)
+        hard_update_usher_tree(ch_protected, ch_expanded_tree, ch_protobuf, ch_expanded_metadata)
         ch_full_tree = hard_update_usher_tree.out.tree
+        ch_full_metadata = hard_update_usher_tree.out.metadata
     }
 
-    post_process_tree(ch_full_tree, ch_clean_metadata)
+    post_process_tree(ch_full_tree, ch_full_metadata)
     publish_trees(ch_clean_fasta, post_process_tree.out.metadata, ch_mutations, ch_constellations, post_process_tree.out.newick_tree, post_process_tree.out.nexus_tree)
 }
