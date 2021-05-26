@@ -2,7 +2,7 @@
   "microreact": [
     {
       "suffix": "public",
-      "tree": "newick",
+      "tree": "pruned_newick",
       "anonymize": true,
       "metadata_fields": [
         "sequence_name",
@@ -24,7 +24,7 @@
     },
     {
       "suffix": "private",
-      "tree": "newick",
+      "tree": "pruned_newick",
       "metadata_fields": [
         "sequence_name",
         "sample_date",
@@ -142,6 +142,9 @@
     },
     {
       "tree": "newick"
+    },
+    {
+      "tree": "pruned_newick"
     }
   ],
   "public": [

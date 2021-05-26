@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument('--seed', dest = 'seed', required=False, help='If anonymize, use this random seed')
 
     parser.add_argument('--newick-tree', dest = 'newick_tree', required=False, help='Newick tree')
+    parser.add_argument('--pruned-newick-tree', dest = 'pruned_newick_tree', required=False, help='Newick tree with fewer tips')
     parser.add_argument('--nexus-tree', dest = 'nexus_tree', required=False, help='Nexus tree')
 
     parser.add_argument('--recipes', dest = 'recipes', required=True, help='JSON of recipes')
@@ -37,7 +38,7 @@ def parse_args():
 #"suffix": something to append to file names
 #"exclude_uk": True or False to exclude samples from UK
 #"uk_only": True or False to include only samples from UK
-#"tree": "newick" or "nexus"
+#"tree": "newick" or "nexus" or "pruned_newick"
 #"anonymize": True or False to anonymize COG sequences e.g. for microreact
 #"seed": int, seed to use for anonymizing
 
@@ -69,6 +70,9 @@ def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv,
 
     if info_dict["tree"] in tree_dict.keys():
         info_dict["out_tree"] = "%s.%s" %(tree_start, info_dict["tree"])
+        if "pruned" in info_dict["tree"]:
+            info_dict["out_tree"] = info_dict["out_tree"].replace("pruned_", "pruned.")
+
 
     if info_dict["fasta"]:
         info_dict["out_fa"] = "%s.fasta" %fasta_start
@@ -196,7 +200,7 @@ def main():
     if args.seed:
         random.seed(args.seed)
 
-    tree_dict = {"newick":args.newick_tree, "nexus":args.nexus_tree}
+    tree_dict = {"newick":args.newick_tree, "nexus":args.nexus_tree, "pruned_newick": args.pruned_newick_tree}
     print(tree_dict)
 
     recipes = {}

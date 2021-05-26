@@ -7,6 +7,66 @@ publish_dir = file(params.publish_dir)
 publish_dev = file(params.publish_dev)
 
 
+process get_unreliable_tips {
+    /**
+    * Pulls out list of tips in metadata
+    * @input metadata
+    */
+
+    input:
+    path metadata
+
+    output:
+    path "${metadata.baseName}.tips.txt"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import csv
+
+    filter_column = "is_unreliable_in_tree"
+    index_column = "sequence_name"
+    with open("${metadata}", 'r', newline = '') as csv_in, \
+         open("${metadata.baseName}.tips.txt", 'w') as tips_out:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        if index_column not in reader.fieldnames:
+            sys.exit("Index column %s not in CSV" %index_column)
+        if filter_column in reader.fieldnames:
+            for row in reader:
+                if row[filter_column] in ["Y","Yes","yes","y",True,"True"]:
+                    tips_out.write("'%s'\\n" %row[index_column].replace('"','').replace("'",""))
+    """
+}
+
+process prune_unreliable_tips {
+    /**
+    * Removes unreliable tips of tree
+    * @input metadata, tree
+    */
+
+    input:
+    path tree
+    path tips
+
+    output:
+    path "${tree.baseName}.pruned.newick"
+
+    script:
+    if ( params.prune )
+    """
+    gotree prune \
+      -i ${tree} \
+      -f ${tips} \
+      -o "${tree.baseName}.pruned.newick"
+    """
+    else
+    """
+    cp ${tree} "${tree.baseName}.pruned.newick"
+    """
+}
+
+
+
 process publish_master_metadata {
     /**
     * Publishes master metadata csv for this category
@@ -100,7 +160,7 @@ process publish_tree_recipes {
     publishDir "${publish_dir}/", pattern: "*/*.*", mode: 'copy', overwrite: true
 
     input:
-    tuple path(fasta),path(min_metadata),path(metadata),path(mutations),path(constellations),path(newick_tree),path(nexus_tree),path(recipe)
+    tuple path(fasta),path(min_metadata),path(metadata),path(mutations),path(constellations),path(newick_tree),path(pruned_newick_tree),path(nexus_tree),path(recipe)
 
     output:
     path "${recipe.baseName}.done.txt", emit: flag
@@ -116,6 +176,7 @@ process publish_tree_recipes {
       --mutations ${mutations} \
       --constellations ${constellations} \
       --newick-tree ${newick_tree} \
+      --pruned-newick-tree ${pruned_newick_tree} \
       --nexus-tree ${nexus_tree} \
       --seed ${params.seed} \
       --recipes ${recipe} \
@@ -180,6 +241,8 @@ workflow publish_trees {
         nexus_tree
     main:
         publish_master_metadata(metadata,params.category)
+        get_unreliable_tips(metadata)
+        prune_unreliable_tips(newick_tree,get_unreliable_tips.out).set{ pruned_newick_tree }
         fetch_min_metadata(fasta,metadata)
         split_recipes(publish_recipes)
         recipe_ch = split_recipes.out.flatten()
@@ -188,6 +251,7 @@ workflow publish_trees {
                                     .combine(mutations)
                                     .combine(constellations)
                                     .combine(newick_tree)
+                                    .combine(pruned_newick_tree)
                                     .combine(nexus_tree)
                                     .combine(recipe_ch)
                                     .set{ publish_input_ch }
