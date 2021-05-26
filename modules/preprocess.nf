@@ -131,6 +131,33 @@ process clean_metadata {
 }
 
 
+process get_keep_tips {
+    /**
+    * Pulls out list of tips in metadata
+    * @input metadata
+    */
+
+    input:
+    path metadata
+
+    output:
+    path "${metadata.baseName}.tips.txt"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import csv
+
+    with open("${metadata}", 'r', newline = '') as csv_in, \
+         open("${metadata.baseName}.tips.txt", 'w') as tips_out:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        if "sequence_name" not in reader.fieldnames:
+            sys.exit("Index column 'sequence_name' not in CSV")
+        for row in reader:
+            tips_out.write("'%s'\\n" %row["sequence_name"].replace('"','').replace("'",""))
+    """
+}
+
 process prune_tree_with_metadata {
     /**
     * Removes tips of tree with no matching metadata
@@ -138,8 +165,8 @@ process prune_tree_with_metadata {
     */
 
     input:
-    path metadata
     path tree
+    path tips
 
     output:
     path "${tree.baseName}.pruned.newick"
@@ -147,10 +174,11 @@ process prune_tree_with_metadata {
     script:
     if ( params.prune )
     """
-    $project_dir/../bin/prune_tree.py \
-          --metadata ${metadata} \
-          --in-tree "${tree}" \
-          --out-tree "${tree.baseName}.pruned.newick"
+    gotree prune \
+      -i ${tree} \
+      -f ${tips} \
+      -r \
+      -o "${tree.baseName}.pruned.newick"
     """
     else
     """
@@ -229,7 +257,8 @@ workflow clean_fasta_and_metadata_and_tree {
     main:
         clean_fasta_headers_with_tree(fasta, tree)
         clean_metadata(metadata, clean_fasta_headers_with_tree.out.map)
-        prune_tree_with_metadata(clean_metadata.out, clean_fasta_headers_with_tree.out.tree)
+        get_keep_tips(clean_metadata.out)
+        prune_tree_with_metadata(clean_fasta_headers_with_tree.out.tree, get_keep_tips.out)
     emit:
         fasta = clean_fasta_headers_with_tree.out.fasta
         metadata = clean_metadata.out
