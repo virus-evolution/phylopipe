@@ -86,7 +86,7 @@ process announce_unreliable_pruned_tree {
             echo "*${params.whoami}: Pruned tree with unreliable tips removed for ${params.date} complete*\\n" >> unreliable_pruned_tree.json
             echo "Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
             echo "Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
-            echo "Total number of sequences in unreliable list: \$(head -n+1 ${tips} | wc -l)\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in unreliable list: \$(tail -n+1 ${tips} | wc -l)\n" >> unreliable_pruned_tree.json
             echo '"}' >> metadata_pruned_tree.json
 
             echo 'webhook ${params.webhook}'
@@ -99,7 +99,7 @@ process announce_unreliable_pruned_tree {
             echo "*${params.whoami}: Pruned tree with unreliable tips removed for ${params.date} complete*\\n" >> unreliable_pruned_tree.json
             echo "Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
             echo "Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\n" >> unreliable_pruned_tree.json
-            echo "Total number of sequences in unreliable list: \$(head -n+1 ${tips} | wc -l)\n" >> unreliable_pruned_tree.json
+            echo "Total number of sequences in unreliable list: \$(tail -n+1 ${tips} | wc -l)\n" >> unreliable_pruned_tree.json
             echo '"}' >> metadata_pruned_tree.json
 
            """
