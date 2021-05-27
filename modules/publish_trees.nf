@@ -34,7 +34,9 @@ process get_unreliable_tips {
         if filter_column in reader.fieldnames:
             for row in reader:
                 if row[filter_column] in ["Y","Yes","yes","y",True,"True"]:
-                    tips_out.write("'%s'\\n" %row[index_column].replace('"','').replace("'",""))
+                    name = row[index_column].replace('"','').replace("'","")
+                    tips_out.write("'%s'\\n" %name)
+                    tips_out.write("%s\\n" %name)
     """
 }
 
