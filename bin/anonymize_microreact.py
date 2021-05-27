@@ -45,18 +45,21 @@ def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
         writer = csv.DictWriter(csv_out, fieldnames = reader.fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
         writer.writeheader()
 
+        selected_names = set()
         for row in reader:
             if row['adm2'] in anonymous_locations:
                 row['adm2'] = ''
 
             if row['is_cog_uk'] in ["True", True]:
                 anonymous_name = get_random_name()
-                while anonymous_name in anonymous_names:
+                while anonymous_name in selected_names:
                     anonymous_name = get_random_name()
                 anonymous_names[row['sequence_name']] = anonymous_name
                 row['sequence_name'] = anonymous_name
-
+                selected_names.add(anonymous_name)
             writer.writerow(row)
+        del selected_names
+
     print("Found %i anonymous_names" %len(anonymous_names))
     tree = open(tree_in, 'r').read()
     tip = re.compile("[A-Za-z0-9_-]+/[A-Za-z0-9_-]+/202[01]", re.U)
