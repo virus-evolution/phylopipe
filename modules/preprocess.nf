@@ -238,9 +238,9 @@ process announce_metadata_pruned_tree {
             """
             echo '{"text":"' > metadata_pruned_tree.json
             echo "*${params.whoami}: Metadata pruned tree for ${params.date} complete*\\n" >> metadata_pruned_tree.json
-            echo "Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> metadata_pruned_tree.json
-            echo "Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\n" >> metadata_pruned_tree.json
-            echo "Total number of sequences in metadata: \$(tail -n+1 ${metadata} | wc -l)\n" >> metadata_pruned_tree.json
+            echo "> Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\\n" >> metadata_pruned_tree.json
+            echo "> Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\\n" >> metadata_pruned_tree.json
+            echo "> Total number of sequences in metadata: \$(tail -n+1 ${metadata} | wc -l)\\n" >> metadata_pruned_tree.json
             echo '"}' >> metadata_pruned_tree.json
 
             echo 'webhook ${params.webhook}'
@@ -251,9 +251,9 @@ process announce_metadata_pruned_tree {
            """
            echo '{"text":"' > metadata_pruned_tree.json
            echo "*${params.whoami}: Metadata pruned tree for ${params.date} complete*\\n" >> metadata_pruned_tree.json
-           echo "Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\n" >> metadata_pruned_tree.json
-           echo "Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\n" >> metadata_pruned_tree.json
-           echo "Total number of sequences in metadata: \$(tail -n+1 ${metadata} | wc -l)\n" >> metadata_pruned_tree.json
+           echo "> Total number of sequences in original tree: \$(gotree stats tips -i ${tree} | tail -n+2 | wc -l)\\n" >> metadata_pruned_tree.json
+           echo "> Total number of sequences in pruned tree: \$(gotree stats tips -i ${pruned_tree} | tail -n+2 | wc -l)\\n" >> metadata_pruned_tree.json
+           echo "> Total number of sequences in metadata: \$(tail -n+1 ${metadata} | wc -l)\\n" >> metadata_pruned_tree.json
            echo '"}' >> metadata_pruned_tree.json
            """
 }
