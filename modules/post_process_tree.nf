@@ -210,6 +210,7 @@ process annotate_tree_uk_lineage {
     * Adds metadata annotations to tree
     * @input tree, metadata
     */
+    label 'retry_increasing_mem'
 
     input:
     path tree

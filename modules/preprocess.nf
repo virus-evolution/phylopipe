@@ -155,6 +155,8 @@ process get_keep_tips {
             sys.exit("Index column 'sequence_name' not in CSV")
         for row in reader:
             tips_out.write("'%s'\\n" %row["sequence_name"].replace('"','').replace("'",""))
+            tips_out.write("%s\\n" %row["sequence_name"].replace('"','').replace("'",""))
+
     """
 }
 
