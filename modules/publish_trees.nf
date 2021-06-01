@@ -195,7 +195,7 @@ process publish_tree_recipes {
     */
 
     errorStrategy 'retry'
-    memory = {6.GB * task.attempt}
+    memory = {8.GB * task.attempt}
     maxRetries = 2
     publishDir "${publish_dir}/", pattern: "*/*.*", mode: 'copy', overwrite: true
 
