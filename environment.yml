@@ -15,7 +15,6 @@ dependencies:
   - jclusterfunk
   - ucsc-fatovcf
   - usher
-  - etetoolkit::ete_toolchain
   - pip:
       - git+https://github.com/cov-ert/fastafunk.git
       - git+https://github.com/cov-ert/clusterfunk.git
