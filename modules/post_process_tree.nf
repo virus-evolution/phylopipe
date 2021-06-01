@@ -350,7 +350,7 @@ process annotate_tree_phylotype {
     * @input tree, metadata
     */
     publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.nexus" }, overwrite: true
-
+    label 'retry_increasing_mem'
 
     input:
     path tree
