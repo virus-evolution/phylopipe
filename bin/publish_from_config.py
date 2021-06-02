@@ -49,7 +49,7 @@ def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv,
                  "tree":None, "fasta": None,
                  "anonymize":False, "drop_index": False, "date": date, "data": "cog_global",
                  "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_muts":muts_csv, "in_con":con_csv, "in_tree":None,
-                 "out_fa":None, "intermediate_csv":"tmp.csv", "out_csv":None, "out_tree":None}
+                 "out_fa":None, "intermediate_csv":"tmp.csv", "out_csv":"tmp.csv", "out_tree":None}
     info_dict.update(config_dict)
 
     if info_dict["tree"] in tree_dict.keys():
@@ -57,7 +57,7 @@ def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv,
 
     start = "%s/%s_%s" %(outdir, info_dict["data"], info_dict["date"])
     tree_start = "%s_tree" %start
-    fasta_start = "%s_tree" %start
+    fasta_start = start
 
     if info_dict["fasta"] or info_dict["tree"]:
         start += "_metadata"
@@ -106,6 +106,10 @@ def syscall(cmd_list, allow_fail=False):
 def publish_file(outdir, info_dict, seed):
     if info_dict["tree"] is not None and not info_dict["anonymize"]:
         cmd_list = ["cp", info_dict["in_tree"], info_dict["out_tree"]]
+        syscall(cmd_list)
+
+    if info_dict["out_fa"] is not None and info_dict["metadata_fields"] is None:
+        cmd_list = ["cp", info_dict["in_fa"], info_dict["out_fa"]]
         syscall(cmd_list)
 
     if info_dict["metadata_fields"] is None:
