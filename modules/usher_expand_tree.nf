@@ -333,6 +333,80 @@ process root_tree {
 }
 
 
+process cut_long_branches {
+    /**
+    * Cut branches whose length is greater than or equal to the given length
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "${tree.baseName}.components.tsv"
+
+    script:
+    """
+    gotree brlen cut \
+        -l ${params.max_branch_length} \
+        -i ${tree} \
+        -o ${tree.baseName}.components.tsv
+    """
+}
+
+process extract_tips_to_prune {
+    /**
+    * Parse connected components for individual components
+    * @input tree
+    */
+
+    input:
+    path tsv
+
+    output:
+    path "${tsv.baseName}.tips.txt"
+
+    script:
+    """
+    #!/usr/bin/env python3
+
+    min_component_size = 2
+
+    with open("${tsv}", 'r') as f, \
+         open("${tsv.baseName}.tips.txt", 'w') as g:
+        for line in f:
+            l = line.rstrip().split('\t')
+            pos, component_size, tip_list = l
+
+            if int(component_size) < min_component_size:
+                tips = tip_list.split()
+                for tip in tips:
+                    g.write("%s\\n" %tip)
+    """
+}
+
+process prune_tree_of_long_branches {
+    /**
+    * Removes tips of tree corresponding to long branches
+    * @input tree
+    */
+
+    input:
+    path tree
+    path tips
+
+    output:
+    path "${tree.baseName}.pruned.newick"
+
+    script:
+    """
+    gotree prune \
+      -i ${tree} \
+      -f ${tips} \
+      -o "${tree.baseName}.pruned.newick"
+    """
+}
+
 process rescale_branch_lengths {
     /**
     * Scales the integer branch lengths to in [0,1]
@@ -469,6 +543,17 @@ workflow iteratively_force_update_tree {
         metadata = add_usher_metadata.out
 }
 
+workflow remove_long_branches {
+    take:
+        tree
+    main:
+        cut_long_branches(tree)
+        extract_tips_to_prune(cut_long_branches.out)
+        prune_tree_of_long_branches(tree, extract_tips_to_prune.out)
+    emit:
+        tree = prune_tree_of_long_branches.out
+}
+
 
 workflow usher_expand_tree {
     take:
@@ -493,7 +578,8 @@ workflow usher_expand_tree {
             out_metadata = metadata
         }
         root_tree(out_tree)
-        rescale_branch_lengths(root_tree.out)
+        remove_long_branches(root_tree.out)
+        rescale_branch_lengths(remove_long_branches.out)
         announce_tree_complete(rescale_branch_lengths.out, "initial")
     emit:
         tree = rescale_branch_lengths.out
@@ -512,7 +598,8 @@ workflow soft_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf,metadata)
         root_tree(iteratively_update_tree.out.tree)
-        rescale_branch_lengths(root_tree.out)
+        remove_long_branches(root_tree.out)
+        rescale_branch_lengths(remove_long_branches.out)
         announce_tree_complete(rescale_branch_lengths.out, "soft")
     emit:
         tree = rescale_branch_lengths.out
@@ -531,7 +618,8 @@ workflow hard_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf,metadata)
         root_tree(iteratively_force_update_tree.out.tree)
-        rescale_branch_lengths(root_tree.out)
+        remove_long_branches(root_tree.out)
+        rescale_branch_lengths(remove_long_branches.out)
         announce_tree_complete(rescale_branch_lengths.out, "hard")
     emit:
         tree = rescale_branch_lengths.out
