@@ -17,7 +17,7 @@ process annotate_tree_uk {
     path metadata
 
     output:
-    path "annotated.tree"
+    path "annotated1.tree"
 
     script:
     """
@@ -30,7 +30,7 @@ process annotate_tree_uk {
         --in-format newick \
         --out-format nexus \
         --input ${tree} \
-        --output "annotated.tree"
+        --output "annotated1.tree"
     """
 }
 
@@ -217,7 +217,7 @@ process annotate_tree_uk_lineage {
     path metadata
 
     output:
-    path "annotated.tree"
+    path "annotated2.tree"
 
     script:
     """
@@ -226,7 +226,7 @@ process annotate_tree_uk_lineage {
         --trait-columns uk_lineage \
         --index-column sequence_name \
         --input ${tree} \
-        --output "annotated.tree"
+        --output "annotated2.tree"
     """
 }
 
@@ -357,7 +357,7 @@ process annotate_tree_phylotype {
     path metadata
 
     output:
-    path "annotated.tree"
+    path "annotated3.tree"
 
     script:
     """
@@ -366,7 +366,7 @@ process annotate_tree_phylotype {
         --trait-columns phylotype \
         --index-column sequence_name \
         --input ${tree} \
-        --output "annotated.tree"
+        --output "annotated3.tree"
     """
 }
 
