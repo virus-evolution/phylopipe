@@ -25,26 +25,29 @@ process dequote_tree {
 }
 
 
-process mask_reference {
+process mask_fasta {
     /**
-    * Applies a mask to reference
+    * Applies a mask to fasta
     * @input alignment
     * @output alignment_updated
     * @params mask_file
     */
 
+    input:
+    path fasta
+
     output:
-    path "${reference.baseName}.masked.fa"
+    path "${fasta.baseName}.masked.fa"
 
     script:
     """
     $project_dir/../bin/add_mask.py \
-      --in-alignment ${reference} \
-      --out-alignment "${reference.baseName}.masked.fa" \
-      --mask ${mask_file} \
+      --in-alignment ${fasta} \
+      --out-alignment "${fasta.baseName}.masked.fa" \
+      --vcf ${mask_file} \
+      --filters nanopore_adapter single_src highly_homoplasic
     """
 }
-
 
 process extract_tips_fasta {
     /**
@@ -498,7 +501,7 @@ process announce_protobuf_complete {
 
 reference = file(params.reference_fasta)
 lineage_splits = file(params.lineage_splits)
-mask_file = file(params.mask)
+mask_file = file(params.mask_vcf)
 
 
 workflow iteratively_update_tree {
@@ -508,9 +511,9 @@ workflow iteratively_update_tree {
         metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        masked_reference = mask_reference()
-        add_reference_to_fasta(fasta_chunks, masked_reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
+        add_reference_to_fasta(fasta_chunks, reference)
+        mask_fasta(add_reference_to_fasta.out)
+        fasta_to_vcf(mask_fasta.out)
         fasta_to_vcf.out.collect().set{ vcf_list }
         usher_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_update_tree.out.usher_log.last(),metadata)
@@ -529,9 +532,9 @@ workflow iteratively_force_update_tree {
         metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        masked_reference = mask_reference()
-        add_reference_to_fasta(fasta_chunks, masked_reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
+        add_reference_to_fasta(fasta_chunks, reference)
+        mask_fasta(add_reference_to_fasta.out)
+        fasta_to_vcf(mask_fasta.out)
         fasta_to_vcf.out.collect().set{ vcf_list }
         usher_force_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_force_update_tree.out.usher_log.last(),metadata)
@@ -563,9 +566,9 @@ workflow usher_expand_tree {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        masked_reference = mask_reference()
-        add_reference_to_fasta(extract_tips_fasta.out.fasta, masked_reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
+        add_reference_to_fasta(extract_tips_fasta.out.fasta, reference)
+        mask_fasta(add_reference_to_fasta.out.fasta)
+        fasta_to_vcf(mask_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         if ( params.update_protobuf ){
             iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf,metadata)
@@ -634,9 +637,9 @@ workflow build_protobuf {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        masked_reference = mask_reference()
-        add_reference_to_fasta(extract_tips_fasta.out.fasta, masked_reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
+        add_reference_to_fasta(extract_tips_fasta.out.fasta, reference)
+        mask_fasta(add_reference_to_fasta.out.fasta)
+        fasta_to_vcf(mask_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         announce_protobuf_complete(usher_start_tree.out.protobuf)
     emit:
