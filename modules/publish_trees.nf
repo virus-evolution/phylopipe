@@ -197,7 +197,7 @@ process publish_tree_recipes {
     errorStrategy 'retry'
     memory = {8.GB * task.attempt}
     maxRetries = 2
-    publishDir "${publish_dir}/", pattern: "*/*.*", mode: 'copy', overwrite: true
+    publishDir "${publish_dir}/", pattern: "**/*.*", mode: 'copy', overwrite: true
 
     input:
     tuple path(fasta),path(min_metadata),path(metadata),path(mutations),path(constellations),path(newick_tree),path(pruned_newick_tree),path(nexus_tree),path(recipe)
@@ -205,7 +205,7 @@ process publish_tree_recipes {
     output:
     path "${recipe.baseName}.done.txt", emit: flag
     path "public/cog_*_tree.newick", optional: true, emit: tree
-    path "*/cog_*.*", emit: all
+    path "**/cog_*.*", emit: all
 
     script:
     """
