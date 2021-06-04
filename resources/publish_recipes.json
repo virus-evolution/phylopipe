@@ -156,12 +156,12 @@
     },
     {
       "suffix": "public",
-      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","adm2","outer_postcode","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
+      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
       "where": "epi_week=edin_epi_week adm1=adm1_UK"
     },
     {
       "suffix": "public_all",
-      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","adm2","outer_postcode","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
+      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
       "where": "epi_week=edin_epi_week adm1=adm1_UK"
     }
   ],
