@@ -50,7 +50,7 @@ def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
             if row['adm2'] in anonymous_locations:
                 row['adm2'] = ''
 
-            if row['is_cog_uk'] in ["True", True]:
+            if row['is_cog_uk'] in ["True", True, "Y", "Yes", "y", "yes"]:
                 anonymous_name = get_random_name()
                 while anonymous_name in selected_names:
                     anonymous_name = get_random_name()
