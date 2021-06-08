@@ -26,10 +26,10 @@ def remove_reference(fasta_file, out_file, reference_file):
     with open(fasta_file, 'r') as f, \
          open(out_file, 'w') as g:
         for line in f:
-            if found:
-                g.write(line)
-            elif skip:
+            if skip:
                 skip = False
+            elif found:
+                g.write(line)
             elif line == reference:
                 skip = True
                 found = True
