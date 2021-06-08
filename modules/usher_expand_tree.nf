@@ -511,9 +511,9 @@ workflow iteratively_update_tree {
         metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        add_reference_to_fasta(fasta_chunks, reference)
-        mask_fasta(add_reference_to_fasta.out)
-        fasta_to_vcf(mask_fasta.out)
+        mask_fasta(fasta_chunks)
+        add_reference_to_fasta(mask_fasta.out, reference)
+        fasta_to_vcf(add_reference_to_fasta.out)
         fasta_to_vcf.out.collect().set{ vcf_list }
         usher_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_update_tree.out.usher_log.last(),metadata)
@@ -532,9 +532,9 @@ workflow iteratively_force_update_tree {
         metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        add_reference_to_fasta(fasta_chunks, reference)
-        mask_fasta(add_reference_to_fasta.out)
-        fasta_to_vcf(mask_fasta.out)
+        mask_fasta(fasta_chunks)
+        add_reference_to_fasta(mask_fasta.out, reference)
+        fasta_to_vcf(add_reference_to_fasta.out)
         fasta_to_vcf.out.collect().set{ vcf_list }
         usher_force_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_force_update_tree.out.usher_log.last(),metadata)
@@ -566,9 +566,9 @@ workflow usher_expand_tree {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        add_reference_to_fasta(extract_tips_fasta.out.fasta, reference)
-        mask_fasta(add_reference_to_fasta.out.fasta)
-        fasta_to_vcf(mask_fasta.out)
+        mask_fasta(extract_tips_fasta.out.fasta)
+        add_reference_to_fasta(mask_fasta.out, reference)
+        fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         if ( params.update_protobuf ){
             iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf,metadata)
@@ -637,9 +637,9 @@ workflow build_protobuf {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        add_reference_to_fasta(extract_tips_fasta.out.fasta, reference)
-        mask_fasta(add_reference_to_fasta.out.fasta)
-        fasta_to_vcf(mask_fasta.out)
+        mask_fasta(extract_tips_fasta.out.fasta)
+        add_reference_to_fasta(mask_fasta.out, reference)
+        fasta_to_vcf(add_reference_to_fasta.out)
         usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
         announce_protobuf_complete(usher_start_tree.out.protobuf)
     emit:
@@ -652,7 +652,7 @@ workflow update_protobuf {
         protobuf
         metadata
     main:
-        iteratively_force_update_tree(fasta,protobuf,metadata)
+        iteratively_update_tree(fasta,protobuf,metadata)
         announce_protobuf_complete(iteratively_force_update_tree.out.protobuf)
     emit:
         protobuf = iteratively_force_update_tree.out.protobuf
