@@ -24,6 +24,28 @@ process dequote_tree {
     """
 }
 
+process remove_reference {
+    /**
+    * Removes reference sequences from fasta
+    * @input alignment
+    * @output alignment_updated
+    * @params reference
+    */
+
+    input:
+    path fasta
+
+    output:
+    path "${fasta.baseName}.noref.fa"
+
+    script:
+    """
+    $project_dir/../bin/remove_ref.py \
+      --in-alignment ${fasta} \
+      --out-alignment "${fasta.baseName}.noref.fa" \
+      --reference ${reference}
+    """
+}
 
 process mask_fasta {
     /**
@@ -504,6 +526,20 @@ lineage_splits = file(params.lineage_splits)
 mask_file = file(params.mask_vcf)
 
 
+workflow prepare_fasta {
+    take:
+        fasta
+    main:
+        remove_reference(fasta)
+        mask_fasta(remove_reference.out)
+        add_reference_to_fasta(mask_fasta.out, reference)
+        fasta_to_vcf(add_reference_to_fasta.out)
+    emit:
+        fasta = fasta_to_vcf.out
+}
+
+
+
 workflow iteratively_update_tree {
     take:
         fasta
@@ -511,10 +547,8 @@ workflow iteratively_update_tree {
         metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        mask_fasta(fasta_chunks)
-        add_reference_to_fasta(mask_fasta.out, reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
-        fasta_to_vcf.out.collect().set{ vcf_list }
+        prepare_fasta(fasta_chunks)
+        prepare_fasta.out.collect().set{ vcf_list }
         usher_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_update_tree.out.usher_log.last(),metadata)
         final_tree = usher_update_tree.out.tree.last()
@@ -532,10 +566,8 @@ workflow iteratively_force_update_tree {
         metadata
     main:
         fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
-        mask_fasta(fasta_chunks)
-        add_reference_to_fasta(mask_fasta.out, reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
-        fasta_to_vcf.out.collect().set{ vcf_list }
+        prepare_fasta(fasta_chunks)
+        prepare_fasta.out.collect().set{ vcf_list }
         usher_force_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_force_update_tree.out.usher_log.last(),metadata)
         final_tree = usher_force_update_tree.out.tree.last()
@@ -566,10 +598,8 @@ workflow usher_expand_tree {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        mask_fasta(extract_tips_fasta.out.fasta)
-        add_reference_to_fasta(mask_fasta.out, reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
-        usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
+        prepare_fasta(extract_tips_fasta.out.fasta)
+        usher_start_tree(prepare_fasta.out,dequote_tree.out)
         if ( params.update_protobuf ){
             iteratively_update_tree(extract_tips_fasta.out.to_add,usher_start_tree.out.protobuf,metadata)
             out_pb = iteratively_update_tree.out.protobuf
@@ -637,10 +667,8 @@ workflow build_protobuf {
     main:
         dequote_tree(newick_tree)
         extract_tips_fasta(fasta, dequote_tree.out)
-        mask_fasta(extract_tips_fasta.out.fasta)
-        add_reference_to_fasta(mask_fasta.out, reference)
-        fasta_to_vcf(add_reference_to_fasta.out)
-        usher_start_tree(fasta_to_vcf.out,dequote_tree.out)
+        prepare_fasta(extract_tips_fasta.out.fasta)
+        usher_start_tree(prepare_fasta.out,dequote_tree.out)
         announce_protobuf_complete(usher_start_tree.out.protobuf)
     emit:
         protobuf = usher_start_tree.out.protobuf
