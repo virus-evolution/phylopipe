@@ -305,6 +305,33 @@ process usher_force_update_tree {
     """
 }
 
+process prune_tree_of_long_branches {
+    /**
+    * Removes tips of tree corresponding to long branches
+    * @input tree
+    */
+
+    publishDir "${publish_dev}/trees", pattern: "*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
+    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
+
+    input:
+    path protobuf
+
+    output:
+    path "${protobuf.baseName}.pruned.tree", emit: tree
+    path "${protobuf.baseName}.pruned.pb", emit: protobuf
+
+    script:
+    """
+    matUtils extract -i ${protobuf} \
+            --max-parsimony ${params.max_parsimony} \
+            --max-branch-length ${params.max_branch_length} \
+            --write-tree "${protobuf.baseName}.pruned.tree" \
+            --collapse-tree \
+            --write-mat "${protobuf.baseName}.pruned.pb"
+    """
+}
+
 process add_usher_metadata {
     /**
     * Adds metadata from usher log
@@ -357,80 +384,6 @@ process root_tree {
     """
 }
 
-
-process cut_long_branches {
-    /**
-    * Cut branches whose length is greater than or equal to the given length
-    * @input tree
-    */
-
-    input:
-    path tree
-
-    output:
-    path "${tree.baseName}.components.tsv"
-
-    script:
-    """
-    gotree brlen cut \
-        -l ${params.max_branch_length} \
-        -i ${tree} \
-        -o ${tree.baseName}.components.tsv
-    """
-}
-
-process extract_tips_to_prune {
-    /**
-    * Parse connected components for individual components
-    * @input tree
-    */
-
-    input:
-    path tsv
-
-    output:
-    path "${tsv.baseName}.tips.txt"
-
-    script:
-    """
-    #!/usr/bin/env python3
-
-    min_component_size = 2
-
-    with open("${tsv}", 'r') as f, \
-         open("${tsv.baseName}.tips.txt", 'w') as g:
-        for line in f:
-            l = line.rstrip().split('\t')
-            pos, component_size, tip_list = l
-
-            if int(component_size) < min_component_size:
-                tips = tip_list.split()
-                for tip in tips:
-                    g.write("%s\\n" %tip)
-    """
-}
-
-process prune_tree_of_long_branches {
-    /**
-    * Removes tips of tree corresponding to long branches
-    * @input tree
-    */
-
-    input:
-    path tree
-    path tips
-
-    output:
-    path "${tree.baseName}.pruned.newick"
-
-    script:
-    """
-    gotree prune \
-      -i ${tree} \
-      -f ${tips} \
-      -o "${tree.baseName}.pruned.newick"
-    """
-}
 
 process rescale_branch_lengths {
     /**
@@ -551,8 +504,9 @@ workflow iteratively_update_tree {
         prepare_fasta.out.collect().set{ vcf_list }
         usher_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_update_tree.out.usher_log.last(),metadata)
-        final_tree = usher_update_tree.out.tree.last()
-        final_protobuf = usher_update_tree.out.protobuf.last()
+        prune_tree_of_long_branches(usher_update_tree.out.protobuf.last())
+        final_tree = prune_tree_of_long_branches.out.tree
+        final_protobuf = prune_tree_of_long_branches.out.protobuf
     emit:
         tree = final_tree
         protobuf = final_protobuf
@@ -570,23 +524,13 @@ workflow iteratively_force_update_tree {
         prepare_fasta.out.collect().set{ vcf_list }
         usher_force_update_tree(vcf_list, protobuf)
         add_usher_metadata(usher_force_update_tree.out.usher_log.last(),metadata)
-        final_tree = usher_force_update_tree.out.tree.last()
-        final_protobuf = usher_force_update_tree.out.protobuf.last()
+        prune_tree_of_long_branches(usher_force_update_tree.out.protobuf.last())
+        final_tree = prune_tree_of_long_branches.out.tree
+        final_protobuf = prune_tree_of_long_branches.out.protobuf
     emit:
         tree = final_tree
         protobuf = final_protobuf
         metadata = add_usher_metadata.out
-}
-
-workflow remove_long_branches {
-    take:
-        tree
-    main:
-        cut_long_branches(tree)
-        extract_tips_to_prune(cut_long_branches.out)
-        prune_tree_of_long_branches(tree, extract_tips_to_prune.out)
-    emit:
-        tree = prune_tree_of_long_branches.out
 }
 
 
@@ -611,8 +555,7 @@ workflow usher_expand_tree {
             out_metadata = metadata
         }
         root_tree(out_tree)
-        remove_long_branches(root_tree.out)
-        rescale_branch_lengths(remove_long_branches.out)
+        rescale_branch_lengths(root_tree.out)
         announce_tree_complete(rescale_branch_lengths.out, "initial")
     emit:
         tree = rescale_branch_lengths.out
@@ -631,8 +574,7 @@ workflow soft_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf,metadata)
         root_tree(iteratively_update_tree.out.tree)
-        remove_long_branches(root_tree.out)
-        rescale_branch_lengths(remove_long_branches.out)
+        rescale_branch_lengths(root_tree.out)
         announce_tree_complete(rescale_branch_lengths.out, "soft")
     emit:
         tree = rescale_branch_lengths.out
@@ -651,8 +593,7 @@ workflow hard_update_usher_tree {
         extract_tips_fasta(fasta, dequote_tree.out)
         iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf,metadata)
         root_tree(iteratively_force_update_tree.out.tree)
-        remove_long_branches(root_tree.out)
-        rescale_branch_lengths(remove_long_branches.out)
+        rescale_branch_lengths(root_tree.out)
         announce_tree_complete(rescale_branch_lengths.out, "hard")
     emit:
         tree = rescale_branch_lengths.out
