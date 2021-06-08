@@ -13,6 +13,7 @@ dependencies:
   - fasttree
   - gotree
   - jclusterfunk
+  - nextflow
   - ucsc-fatovcf
   - usher
   - pip:
