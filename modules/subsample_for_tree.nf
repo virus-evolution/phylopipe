@@ -67,6 +67,34 @@ process filter_on_sample_date {
         """
 }
 
+process filter_on_ambiguous_sites {
+    /**
+    * Filter to keep only sequences without ambiguous bases at those sites
+    * @input fasta
+    * @output fasta
+    * @params sites
+    */
+
+    input:
+    path fasta
+
+    output:
+    path "${fasta.baseName}.site_filtered.fa"
+
+    script:
+    if ( params.downsample )
+        """
+        $project_dir/../bin/filter_by_ambiguous_sites.py \
+                --in-alignment ${fasta} \
+                --out-alignment "${fasta.baseName}.site_filtered.fa" \
+                --sites ${ambiguous_sites}
+        """
+    else
+        """
+        mv "${fasta}" "${fasta.baseName}.site_filtered.fa"
+        """
+}
+
 
 process downsample {
     /**
@@ -111,6 +139,7 @@ process announce_summary {
     input:
     path original
     path unique
+    path filtered_on_ambiguous_sites
     path filtered_on_sample_date
     path downsampled
 
@@ -121,12 +150,13 @@ process announce_summary {
         if (params.webhook)
             """
             echo '{"text":"' > announce.json
-                echo "*${params.whoami}: Subsampling ${params.date} for tree*\\n" >> announce.json
-                echo "> Number of sequences in COG and GISAID input files : \$(cat ${original} | grep '>' | wc -l)\\n" >> announce.json
-                echo "> Number of unique sequences : \$(cat ${unique} | grep '>' | wc -l)\\n" >> announce.json
-                echo "> Number of (non-unique) sequences with sample_date older than ${params.time_window} days: \$(cat ${filtered_on_sample_date} | grep 'sample_date older than' | wc -l)\\n" >> announce.json
-                echo "> Number of sequences after downsampling: \$(cat ${downsampled} | grep '>' | wc -l)\\n" >> announce.json
-                echo '"}' >> announce.json
+            echo "*${params.whoami}: Subsampling ${params.date} for tree*\\n" >> announce.json
+            echo "> Number of sequences in COG and GISAID input files : \$(cat ${original} | grep '>' | wc -l)\\n" >> announce.json
+            echo "> Number of unique sequences : \$(cat ${unique} | grep '>' | wc -l)\\n" >> announce.json
+            echo "> Number of sequences with non-ambiguous bases at sites of interest : \$(cat ${filtered_on_ambiguous_sites} | grep '>' | wc -l)\\n" >> announce.json
+            echo "> Number of (non-unique) sequences with sample_date older than ${params.time_window} days: \$(cat ${filtered_on_sample_date} | grep 'sample_date older than' | wc -l)\\n" >> announce.json
+            echo "> Number of sequences after downsampling: \$(cat ${downsampled} | grep '>' | wc -l)\\n" >> announce.json
+            echo '"}' >> announce.json
 
             echo 'webhook ${params.webhook}'
 
@@ -134,12 +164,20 @@ process announce_summary {
             """
         else
             """
-            touch "announce.json"
+            echo '{"text":"' > announce.json
+            echo "*${params.whoami}: Subsampling ${params.date} for tree*\\n" >> announce.json
+            echo "> Number of sequences in COG and GISAID input files : \$(cat ${original} | grep '>' | wc -l)\\n" >> announce.json
+            echo "> Number of unique sequences : \$(cat ${unique} | grep '>' | wc -l)\\n" >> announce.json
+            echo "> Number of sequences with non-ambiguous bases at sites of interest : \$(cat ${filtered_on_ambiguous_sites} | grep '>' | wc -l)\\n" >> announce.json
+            echo "> Number of (non-unique) sequences with sample_date older than ${params.time_window} days: \$(cat ${filtered_on_sample_date} | grep 'sample_date older than' | wc -l)\\n" >> announce.json
+            echo "> Number of sequences after downsampling: \$(cat ${downsampled} | grep '>' | wc -l)\\n" >> announce.json
+            echo '"}' >> announce.json
             """
 }
 
 lineage_splits = file(params.lineage_splits)
 mask_file = file(params.mask)
+ambiguous_sites = file(params.ambiguous_sites)
 
 
 workflow subsample_for_tree {
@@ -148,9 +186,10 @@ workflow subsample_for_tree {
         metadata
     main:
         hash_non_unique_seqs(fasta, metadata)
+        filter_on_ambiguous_sites(hash_non_unique_seqs.out.fasta)
         filter_on_sample_date(metadata)
-        downsample(hash_non_unique_seqs.out.fasta, filter_on_sample_date.out)
-        announce_summary(fasta, hash_non_unique_seqs.out.fasta, filter_on_sample_date.out, downsample.out.fasta)
+        downsample(filter_on_ambiguous_sites.out, filter_on_sample_date.out)
+        announce_summary(fasta, hash_non_unique_seqs.out.fasta, filter_on_ambiguous_sites.out, filter_on_sample_date.out, downsample.out.fasta)
     emit:
         fasta = downsample.out.fasta // subset of unique
         metadata = downsample.out.metadata
