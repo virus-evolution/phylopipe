@@ -653,10 +653,10 @@ workflow update_protobuf {
         metadata
     main:
         iteratively_update_tree(fasta,protobuf,metadata)
-        announce_protobuf_complete(iteratively_force_update_tree.out.protobuf)
+        announce_protobuf_complete(iteratively_update_tree.out.protobuf)
     emit:
-        protobuf = iteratively_force_update_tree.out.protobuf
-        metadata = iteratively_force_update_tree.out.metadata
+        protobuf = iteratively_update_tree.out.protobuf
+        metadata = iteratively_update_tree.out.metadata
 }
 
 workflow {
