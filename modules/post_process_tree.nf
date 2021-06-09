@@ -435,6 +435,10 @@ process annotate_tree {
 
     script:
     """
+    errorStrategy = { task.attempt < 3 ? 'retry' : 'terminate'}
+    memory = {8.GB * task.attempt}
+    maxRetries = 3
+
     jclusterfunk annotate \
       -i ${tree} \
       -c sequence_name \
