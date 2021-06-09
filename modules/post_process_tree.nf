@@ -230,6 +230,25 @@ process annotate_tree_uk_lineage {
     """
 }
 
+process get_uk_lineage_tips {
+    /**
+    * Pulls out tip files for each UK lineage
+    * @input metadata
+    */
+
+    input:
+    path metadata
+
+    output:
+    path "UK*.txt"
+
+    script:
+    """
+    $project_dir/../bin/get_uk_lineage_tips.py \
+            --in-metadata ${metadata}
+    """
+}
+
 process dequote_tree {
     /**
     * Dequotes tree
@@ -442,12 +461,8 @@ workflow get_cog_uk_phylotypes {
         //generate_sankey_plot(output_annotations.out,merge_and_create_new_uk_lineages.out)
         update_uk_lineage_metadata(metadata, output_annotations.out, merge_and_create_new_uk_lineages.out)
         annotate_tree_uk_lineage(merge_sibling_del_introduction.out,update_uk_lineage_metadata.out)
-
-        output_annotations.out.splitCsv(header: true)
-                          .map(row -> ["${row.taxon}", "${row.uk_lineage}"])
-                          .collectFile() { item -> [ "${item[1]}.txt", "${item[0]}" + '\n' ] }
-                          .filter { it.countLines() > 2 }
-                          .set{ uk_lineages_ch }
+        get_uk_lineage_tips(merge_and_create_new_uk_lineages.out)
+        get_uk_lineage_tips.out.flatten().set{ uk_lineages_ch }
         dequote_tree(tree)
         cut_out_tree(dequote_tree.out, uk_lineages_ch)
         phylotype_cut_tree(cut_out_tree.out)
