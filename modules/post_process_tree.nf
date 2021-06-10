@@ -424,7 +424,9 @@ process annotate_tree {
     * Adds metadata annotations to tree
     * @input tree, metadata
     */
-    label 'retry_increasing_mem'
+    errorStrategy { task.attempt < 3 ? 'retry' : 'terminate'}
+    memory {8.GB * task.attempt}
+    maxRetries 3
 
     input:
     path tree
@@ -435,14 +437,20 @@ process annotate_tree {
 
     script:
     """
-    errorStrategy = { task.attempt < 3 ? 'retry' : 'terminate'}
-    memory = {8.GB * task.attempt}
-    maxRetries = 3
+    touch in.fa
+
+    fastafunk fetch \
+      --in-metadata ${metadata} \
+      --index-column sequence_name \
+      --filter-column sequence_name ${params.annotations} \
+      --out-metadata tmp.out.csv \
+      --in-fasta in.fa \
+      --out-fasta out.fa
 
     jclusterfunk annotate \
       -i ${tree} \
       -c sequence_name \
-      -m ${metadata} \
+      -m tmp.out.csv \
       --tip-attributes ${params.annotations} \
       -o "annotated.tree" \
       --ignore-missing
