@@ -12,6 +12,8 @@ process annotate_tree_uk {
     * @input tree, metadata
     */
 
+    label 'retry_increasing_mem'
+
     input:
     path tree
     path metadata
@@ -40,6 +42,8 @@ process deltran_ancestral_reconstruction {
     * @input tree
     */
 
+    label 'retry_increasing_mem'
+
     input:
     path tree
 
@@ -62,6 +66,8 @@ process label_deltran_introductions {
     * Label deltrans introductions
     * @input tree
     */
+
+    label 'retry_increasing_mem'
 
     input:
     path tree
@@ -88,6 +94,8 @@ process merge_sibling_del_introduction {
     * @input tree
     */
 
+    label 'retry_increasing_mem'
+
     input:
     path tree
 
@@ -111,6 +119,8 @@ process output_annotations {
     * @input tree
     */
 
+    label 'retry_increasing_mem'
+
     input:
     path tree
 
@@ -132,6 +142,8 @@ process merge_and_create_new_uk_lineages {
     * @input traits_csv
     */
 
+    label 'retry_increasing_mem'
+    
     input:
     path traits_csv
 
@@ -177,6 +189,8 @@ process update_uk_lineage_metadata {
     * @input metadata, traits_csv, uk_lineage_csv
     */
 
+    label 'retry_increasing_mem'
+
     input:
     path metadata
     path traits_csv
@@ -210,6 +224,7 @@ process annotate_tree_uk_lineage {
     * Adds metadata annotations to tree
     * @input tree, metadata
     */
+
     label 'retry_increasing_mem'
 
     input:
@@ -235,6 +250,8 @@ process get_uk_lineage_tips {
     * Pulls out tip files for each UK lineage
     * @input metadata
     */
+
+    label 'retry_increasing_mem'
 
     input:
     path metadata
