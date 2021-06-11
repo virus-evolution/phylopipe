@@ -107,6 +107,31 @@ process announce_unreliable_pruned_tree {
            """
 }
 
+process extract_tips_fasta {
+    /**
+    * Extracts fasta corresponding to tips in the tree
+    * @input fasta, tree
+    */
+    label 'retry_increasing_mem'
+
+    input:
+    path fasta
+    path tree
+
+    output:
+    path "${fasta.baseName}.tips.fasta", emit: fasta
+
+    script:
+    """
+    fastafunk extract \
+        --in-fasta ${fasta} \
+        --in-tree ${tree} \
+        --out-fasta "${fasta.baseName}.tips.fasta" \
+        --reject-fasta "${fasta.baseName}.new.fasta" \
+        --low-memory
+    """
+}
+
 process publish_master_metadata {
     /**
     * Publishes master metadata csv for this category
@@ -285,9 +310,10 @@ workflow publish_trees {
         prune_unreliable_tips(newick_tree,get_unreliable_tips.out).set{ pruned_newick_tree }
         announce_unreliable_pruned_tree(newick_tree, get_unreliable_tips.out, pruned_newick_tree)
         fetch_min_metadata(fasta,metadata)
+        extract_tips_fasta(fetch_min_metadata.out.fasta, pruned_newick_tree)
         split_recipes(publish_recipes)
         recipe_ch = split_recipes.out.flatten()
-        fetch_min_metadata.out.fasta.combine(fetch_min_metadata.out.min_metadata)
+        extract_tips_fasta.out.fasta.combine(fetch_min_metadata.out.min_metadata)
                                     .combine(metadata)
                                     .combine(mutations)
                                     .combine(constellations)
