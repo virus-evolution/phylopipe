@@ -256,16 +256,18 @@ process publish_s3 {
     * @input tree
     */
 
+    publishDir "${publish_dev}/", pattern: "s3dir", mode: 'copy'
+
     input:
     path tree
+
+    output:
+    path s3dir
 
     script:
     """
     mkdir -p s3dir
     cp ${tree} s3dir/cog_global_tree.newick
-
-    s3cmd sync s3dir/ s3://cog-uk/phylogenetics/{params.date}/ --acl-public
-    s3cmd sync s3dir/ s3://cog-uk/phylogenetics/latest/ --acl-public
     """
 }
 
