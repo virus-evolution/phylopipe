@@ -79,7 +79,9 @@ process filter_on_ambiguous_sites {
     path fasta
 
     output:
-    path "${fasta.baseName}.site_filtered.fa"
+    path "${fasta.baseName}.site_filtered.fa", emit: fasta
+    path "ids_with_ambiguous_sites.log", emit: ambiguous_site_ids
+
 
     script:
     if ( params.downsample )
@@ -87,7 +89,7 @@ process filter_on_ambiguous_sites {
         $project_dir/../bin/filter_by_ambiguous_sites.py \
                 --in-alignment ${fasta} \
                 --out-alignment "${fasta.baseName}.site_filtered.fa" \
-                --sites ${ambiguous_sites}
+                --sites ${ambiguous_sites} > "ids_with_ambiguous_sites.log"
         """
     else
         """
@@ -129,6 +131,65 @@ process downsample {
         """
 }
 
+process annotate_metadata {
+    /**
+    * Adds note column with info about sequences hashed, filtered and downsampled
+    * @input metadata
+    * @output metadata
+    */
+
+    input:
+    path metadata
+    path hashmap
+    path ambiguous_site_log
+
+    output:
+    path "${metadata.baseName}.annotated.csv"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import csv
+
+    tips = set()
+    hashmap = {}
+    with open("${hashmap}", 'r', newline = '') as hashmap_in:
+        for line in hashmap_in:
+            tip, redundant = line.rstrip().split(",")
+            tips.add(tip)
+            for id in redundant.split("|"):
+                hashmap[id] = tip
+    print("hashmap contains %d tips and %d redundants" %(len(tips), len(hashmap)))
+
+    ambig = set()
+    with open("${ambiguous_site_log}", 'r', newline = '') as ambiguous_site_log_in:
+        for line in ambiguous_site_log_in:
+            ambig.add(line.rstrip())
+    print("%d had ambiguous bases" %len(ambig))
+
+    with open("${metadata}", 'r', newline = '') as csv_in, \
+        open("${metadata.baseName}.annotated.csv", 'w', newline = '') as csv_out:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        new_fieldnames = reader.fieldnames
+        if "note" not in reader.fieldnames:
+            new_fieldnames.append("note")
+        writer = csv.DictWriter(csv_out, fieldnames = new_fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
+        writer.writeheader()
+        for row in reader:
+            note = []
+            if row["sequence_name"] in hashmap:
+                note.append("hashed to tip %s" %hashmap[row["sequence_name"]])
+            if row["sequence_name"] in ambig:
+                note.append("filtered due to ambiguous base")
+            if row["date_filter"]:
+                if row["note"] and "downsample" not in row["note"]:
+                    note.append("date filtered")
+            if row["note"]:
+                note.append(row["note"])
+            row["note"] = "|".join(note)
+            writer.writerow(row)
+    """
+}
 
 process announce_summary {
     /**
@@ -188,11 +249,12 @@ workflow subsample_for_tree {
         hash_non_unique_seqs(fasta, metadata)
         filter_on_ambiguous_sites(hash_non_unique_seqs.out.fasta)
         filter_on_sample_date(metadata)
-        downsample(filter_on_ambiguous_sites.out, filter_on_sample_date.out)
-        announce_summary(fasta, hash_non_unique_seqs.out.fasta, filter_on_ambiguous_sites.out, filter_on_sample_date.out, downsample.out.fasta)
+        downsample(filter_on_ambiguous_sites.out.fasta, filter_on_sample_date.out)
+        annotate_metadata(downsample.out.metadata, hash_non_unique_seqs.out.hashmap, filter_on_ambiguous_sites.out.ambiguous_site_ids)
+        announce_summary(fasta, hash_non_unique_seqs.out.fasta, filter_on_ambiguous_sites.out.fasta, filter_on_sample_date.out, downsample.out.fasta)
     emit:
         fasta = downsample.out.fasta // subset of unique
-        metadata = downsample.out.metadata
+        metadata = annotate_metadata.out
         hashmap = hash_non_unique_seqs.out.hashmap
 }
 

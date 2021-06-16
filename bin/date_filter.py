@@ -58,7 +58,7 @@ def filter_by_date(in_metadata, out_metadata, todays_date, time_window, filter_c
                 continue
 
             if (todays_date - window) > date:
-                row[filter_column] = "sample_date older than %s days" %window
+                row[filter_column] = "sample_date older than %s days" %time_window
                 if not restrict:
                     writer.writerow(row)
                 continue

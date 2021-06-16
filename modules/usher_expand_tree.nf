@@ -207,6 +207,54 @@ process usher_start_tree {
     """
 }
 
+
+process optimize_start_tree {
+    /**
+    * Runs matOptimize to improve tree
+    * @input tree
+    */
+
+    publishDir "${publish_dev}/trees", pattern: "*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
+
+    input:
+    path protobuf
+
+    output:
+    path "${protobuf.baseName}.optimized.pb"
+
+    script:
+    """
+    matOptimize -i ${protobuf} \
+            -o "${protobuf.baseName}.optimized.pb" \
+            -r 100 \
+            -T ${params.max_cpus} \
+            -s 259200
+    """
+}
+
+process protobuf_to_tree {
+    /**
+    * Runs matUtils to convert to tree
+    * @input tree
+    */
+
+    publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
+
+    input:
+    path protobuf
+
+    output:
+    path "${protobuf.baseName}.tree"
+
+    script:
+    """
+    matUtils extract \
+        -i ${protobuf} \
+        -t "${protobuf.baseName}.tree"
+    """
+}
+
+
 process usher_update_tree {
     /**
     * Makes usher mutation annotated tree
@@ -361,6 +409,52 @@ process add_usher_metadata {
     """
 }
 
+process annotate_metadata {
+    /**
+    * Adds to note column with info about sequences added
+    * @input metadata
+    * @output metadata
+    */
+
+    input:
+    path metadata
+    path fasta
+
+    output:
+    path "${metadata.baseName}.annotated.csv"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import csv
+
+    seqs = set()
+    with open("${fasta}", 'r', newline = '') as fasta_in:
+        for line in fasta_in:
+            if line.startswith(">"):
+                seqs.add(line.rstrip()[1:])
+
+    print("Fasta to add had %d sequences" %len(seqs))
+
+    with open("${metadata}", 'r', newline = '') as csv_in, \
+        open("${metadata.baseName}.annotated.csv", 'w', newline = '') as csv_out:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        new_fieldnames = reader.fieldnames
+        if "note" not in reader.fieldnames:
+            new_fieldnames.append("note")
+        writer = csv.DictWriter(csv_out, fieldnames = new_fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
+        writer.writeheader()
+        for row in reader:
+            note = []
+            if row["sequence_name"] in seqs:
+                note.append("tried to add with usher")
+            if row["note"]:
+                note.append(row["note"])
+            row["note"] = "|".join(note)
+            writer.writerow(row)
+    """
+}
+
 process root_tree {
     /**
     * Roots tree with WH04
@@ -488,7 +582,7 @@ workflow prepare_fasta {
         add_reference_to_fasta(mask_fasta.out, reference)
         fasta_to_vcf(add_reference_to_fasta.out)
     emit:
-        fasta = fasta_to_vcf.out
+        vcf = fasta_to_vcf.out
 }
 
 
@@ -503,8 +597,10 @@ workflow iteratively_update_tree {
         prepare_fasta(fasta_chunks)
         prepare_fasta.out.collect().set{ vcf_list }
         usher_update_tree(vcf_list, protobuf)
-        add_usher_metadata(usher_update_tree.out.usher_log.last(),metadata)
+        annotate_metadata(metadata, fasta)
+        add_usher_metadata(usher_update_tree.out.usher_log.last(),annotate_metadata.out)
         prune_tree_of_long_branches(usher_update_tree.out.protobuf.last())
+
         final_tree = prune_tree_of_long_branches.out.tree
         final_protobuf = prune_tree_of_long_branches.out.protobuf
     emit:
@@ -523,7 +619,8 @@ workflow iteratively_force_update_tree {
         prepare_fasta(fasta_chunks)
         prepare_fasta.out.collect().set{ vcf_list }
         usher_force_update_tree(vcf_list, protobuf)
-        add_usher_metadata(usher_force_update_tree.out.usher_log.last(),metadata)
+        annotate_metadata(metadata, fasta)
+        add_usher_metadata(usher_force_update_tree.out.usher_log.last(),annotate_metadata.out)
         prune_tree_of_long_branches(usher_force_update_tree.out.protobuf.last())
         final_tree = prune_tree_of_long_branches.out.tree
         final_protobuf = prune_tree_of_long_branches.out.protobuf
@@ -554,12 +651,14 @@ workflow usher_expand_tree {
             out_tree = usher_start_tree.out.tree
             out_metadata = metadata
         }
-        root_tree(out_tree)
+        optimize_start_tree(out_pb)
+        protobuf_to_tree(optimize_start_tree.out)
+        root_tree(protobuf_to_tree.out)
         rescale_branch_lengths(root_tree.out)
         announce_tree_complete(rescale_branch_lengths.out, "initial")
     emit:
         tree = rescale_branch_lengths.out
-        protobuf = out_pb
+        protobuf = optimize_start_tree.out
         metadata = out_metadata
 }
 

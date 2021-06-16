@@ -119,7 +119,10 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
         open(out_metadata, 'w', newline = '') as csv_out:
 
         reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
-        writer = csv.DictWriter(csv_out, fieldnames = reader.fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
+        fieldnames = reader.fieldnames
+        if "note" not in reader.fieldnames:
+            fieldnames.append("note")
+        writer = csv.DictWriter(csv_out, fieldnames = fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
         writer.writeheader()
 
         if "nucleotide_variants" in reader.fieldnames:
@@ -134,8 +137,10 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
         very_most_frequent = get_by_frequency(count_dict, num_samples, band=[0.5,1.0])
 
         for row in reader:
+            row["note"] = ""
             fasta_header = row[FASTA_HEADER]
             if fasta_header not in indexed_fasta:
+                writer.writerow(row)
                 continue
             if original_num_seqs % 1000 == 0:
                 now = datetime.datetime.now()
@@ -146,13 +151,14 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
                                                                       downsample_lineage_size,lineage_dict):
                 if fasta_header in outgroups:
                     row["why_excluded"]=""
-                writer.writerow(row)
                 if row["why_excluded"] in [None, "None", ""] and fasta_header in indexed_fasta:
                     seq_rec = indexed_fasta[fasta_header]
                     fa_out.write(">" + seq_rec.id + "\n")
                     fa_out.write(str(seq_rec.seq) + "\n")
+                    row["note"] = "included in downsample"
                 else:
                     print(row["why_excluded"], fasta_header, (fasta_header in indexed_fasta))
+                writer.writerow(row)
                 continue
             muts = row[var_column].split("|")
             if len(muts) < max_diff:
@@ -192,11 +198,12 @@ def downsample(in_metadata, out_metadata, in_fasta, out_fasta, max_diff, outgrou
                     else:
                         var_dict[mut].append(fasta_header)
                 row["why_excluded"] = ""
-                writer.writerow(row)
                 if fasta_header in indexed_fasta:
                     seq_rec = indexed_fasta[fasta_header]
                     fa_out.write(">" + seq_rec.id + "\n")
                     fa_out.write(str(seq_rec.seq) + "\n")
+                    row["note"] = "included in downsample"
+                writer.writerow(row)
 
     now = datetime.datetime.now()
     print("%s Downsampled from %i seqs to %i seqs" %(str(now), original_num_seqs, len(sample_dict)))

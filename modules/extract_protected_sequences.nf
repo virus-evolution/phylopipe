@@ -40,6 +40,51 @@ process filter_on_sample_date_for_recent {
         """
 }
 
+process annotate_metadata {
+    /**
+    * Adds to note column with info about sequences excluded by date
+    * @input metadata
+    * @output metadata
+    */
+
+    input:
+    path metadata
+    path fasta
+
+    output:
+    path "${metadata.baseName}.annotated.csv"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import csv
+
+    seqs = set()
+    with open("${fasta}", 'r', newline = '') as fasta_in:
+        for line in fasta_in:
+            if line.startswith(">"):
+                seqs.add(line.rstrip()[1:])
+
+    print("Fasta of recent had %d sequences" %len(seqs))
+
+    with open("${metadata}", 'r', newline = '') as csv_in, \
+        open("${metadata.baseName}.annotated.csv", 'w', newline = '') as csv_out:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        new_fieldnames = reader.fieldnames
+        if "note" not in reader.fieldnames:
+            new_fieldnames.append("note")
+        writer = csv.DictWriter(csv_out, fieldnames = new_fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
+        writer.writeheader()
+        for row in reader:
+            note = []
+            if row["sequence_name"] not in seqs:
+                note.append("sample not recent")
+            if row["note"]:
+                note.append(row["note"])
+            row["note"] = "|".join(note)
+            writer.writerow(row)
+    """
+}
 
 process fetch_recent {
     /**
@@ -146,8 +191,10 @@ workflow extract_protected_sequences {
         fetch_outgroups(fasta)
         fetch_outgroups.out.concat( recent_ch, designations_ch ).set { protected_ch }
         protected_ch.collectFile(name: "force.fa").set { output_ch }
+        annotate_metadata(metadata,output_ch)
     emit:
-        output_ch
+        fasta = output_ch
+        metadata = annotate_metadata.out
 }
 
 

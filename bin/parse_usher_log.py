@@ -15,6 +15,11 @@ def parse_log(in_file, out_file):
     """
     Usher STDOUT > CSV
     """
+    ignored = set()
+    with open(in_file, 'r') as in_handle:
+        for line in in_handle:
+            if "Ignoring sample" in line:
+                ignored.add(line.split("Ignoring sample ")[1].split(".")[0])
     with open(in_file, 'r') as in_handle, \
          open(out_file, 'w') as out_handle:
         out_handle.write("sequence_name,parsimony_score,num_parsimony_optimal_placements,is_unreliable_in_tree\n")
@@ -26,6 +31,8 @@ def parse_log(in_file, out_file):
             print(fields)
             assert len(fields) > 3
             row = {"sequence_name": fields[1].split(": ")[1], "parsimony_score": fields[2].split(": ")[1], "num_parsimony_optimal_placements": fields[3].split(": ")[1]}
+            if row["sequence_name"] in ignored:
+                continue
             if int(row["num_parsimony_optimal_placements"]) > 1:
                 row["is_unreliable_in_tree"] = "Y"
             else:

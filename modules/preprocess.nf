@@ -188,6 +188,72 @@ process prune_tree_with_metadata {
     """
 }
 
+process get_tree_tips {
+    /**
+    * Gets list of tree tips
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "${tree.baseName}.tips.txt"
+
+    script:
+    """
+    gotree stats tips \
+      -i ${tree} | cut -f4 > "${tree.baseName}.tips.txt"
+    """
+}
+
+
+process annotate_metadata {
+    /**
+    * Adds note column with info about sequences in input
+    * @input metadata
+    * @output metadata
+    */
+
+    input:
+    path metadata
+    path tips
+
+    output:
+    path "${metadata.baseName}.annotated.csv"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import csv
+
+    tips = set()
+    with open("${tips}", 'r', newline = '') as tips_in:
+        for line in tips_in:
+            tip = line.rstrip().replace("'","")
+            tips.add(tip)
+
+    print("Tree contains %d tips" %len(tips))
+
+    with open("${metadata}", 'r', newline = '') as csv_in, \
+        open("${metadata.baseName}.annotated.csv", 'w', newline = '') as csv_out:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        new_fieldnames = reader.fieldnames
+        if "note" not in reader.fieldnames:
+            new_fieldnames.append("note")
+        writer = csv.DictWriter(csv_out, fieldnames = new_fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
+        writer.writeheader()
+        for row in reader:
+            note = []
+            if row["sequence_name"] in tips:
+                note.append("tip in input tree")
+            if row["note"]:
+                note.append(row["note"])
+            row["note"] = "|".join(note)
+            writer.writerow(row)
+    """
+}
+
 
 process announce_summary {
     /**
@@ -300,10 +366,12 @@ workflow clean_fasta_and_metadata_and_tree {
         clean_metadata(metadata, clean_fasta_headers_with_tree.out.map)
         get_keep_tips(clean_metadata.out)
         prune_tree_with_metadata(clean_fasta_headers_with_tree.out.tree, get_keep_tips.out)
+        get_tree_tips(prune_tree_with_metadata.out)
+        annotate_metadata(clean_metadata.out, get_tree_tips.out)
         announce_metadata_pruned_tree(tree, metadata, prune_tree_with_metadata.out)
     emit:
         fasta = clean_fasta_headers_with_tree.out.fasta
-        metadata = clean_metadata.out
+        metadata = annotate_metadata.out
         tree = prune_tree_with_metadata.out
 }
 

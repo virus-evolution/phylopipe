@@ -39,42 +39,50 @@ workflow {
         ch_clean_metadata = clean_fasta_and_metadata.out.metadata
     }
 
-    ch_protected = extract_protected_sequences(ch_clean_fasta, ch_clean_metadata)
+    extract_protected_sequences(ch_clean_fasta, ch_clean_metadata)
+    ch_protected = extract_protected_sequences.out.fasta
+    ch_protected_metadata = extract_protected_sequences.out.metadata
 
     if ( ! params.protobuf ) {
         if ( ! params.newick_tree ) {
-            subsample_for_tree(ch_clean_fasta, ch_clean_metadata)
+            subsample_for_tree(ch_clean_fasta, ch_protected_metadata)
             build_split_grafted_tree(subsample_for_tree.out.fasta, subsample_for_tree.out.metadata, subsample_for_tree.out.hashmap)
-            if ( params.skip_usher ){
-                ch_full_tree = build_split_grafted_tree.out.tree
-                ch_full_metadata = ch_clean_metadata
-            } else {
-                ch_clean_tree = build_split_grafted_tree.out.tree
-            }
+            ch_clean_tree = build_split_grafted_tree.out.tree
+            ch_fasttree_metadata = subsample_for_tree.out.metadata
+        } else {
+            ch_fasttree_metadata = ch_protected_metadata
         }
+
         if ( ! params.skip_usher ){
-            usher_expand_tree(ch_clean_fasta, ch_clean_tree, ch_clean_metadata)
+            usher_expand_tree(ch_clean_fasta, ch_clean_tree, ch_fasttree_metadata)
             ch_protobuf = usher_expand_tree.out.protobuf
             ch_expanded_tree = usher_expand_tree.out.tree
             ch_expanded_metadata = usher_expand_tree.out.metadata
+        } else {
+            ch_expanded_tree = ch_clean_tree
+            ch_expanded_metadata = ch_fasttree_metadata
         }
 
     } else if ( params.newick_tree && params.update_protobuf ) {
         ch_protobuf_raw = Channel.fromPath(params.protobuf)
-        soft_update_usher_tree(ch_clean_fasta, ch_clean_tree, ch_protobuf_raw, ch_clean_metadata)
+        soft_update_usher_tree(ch_clean_fasta, ch_clean_tree, ch_protobuf_raw, ch_protected_metadata)
         ch_protobuf = soft_update_usher_tree.out.protobuf
         ch_expanded_tree = soft_update_usher_tree.out.tree
         ch_expanded_metadata = soft_update_usher_tree.out.metadata
+
     } else if ( params.newick_tree ) {
         ch_protobuf = Channel.fromPath(params.protobuf)
         ch_expanded_tree = ch_clean_tree
-        ch_expanded_metadata = ch_clean_metadata
+        ch_expanded_metadata = ch_protected_metadata
     }
 
     if (! params.skip_usher ) {
         hard_update_usher_tree(ch_protected, ch_expanded_tree, ch_protobuf, ch_expanded_metadata)
         ch_full_tree = hard_update_usher_tree.out.tree
         ch_full_metadata = hard_update_usher_tree.out.metadata
+    } else if ( params.protobuf ){
+        ch_full_tree = ch_expanded_tree
+        ch_full_metadata = ch_expanded_metadata
     }
 
     post_process_tree(ch_full_tree, ch_full_metadata)

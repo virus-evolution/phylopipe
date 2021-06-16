@@ -44,6 +44,8 @@ def apply_filter(in_fasta, out_fasta, sites_file):
             if keep:
                 fasta_out.write('>' + ID + '\n')
                 fasta_out.write(seq + '\n')
+            else:
+                print(ID)
 
 def main():
     args = parse_args()
