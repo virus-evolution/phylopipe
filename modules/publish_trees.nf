@@ -107,6 +107,24 @@ process announce_unreliable_pruned_tree {
            """
 }
 
+process dequote_tree {
+    /**
+    * Dequotes tree
+    * @input tree
+    */
+
+    input:
+    path tree
+
+    output:
+    path "${tree.baseName}.dequote.tree"
+
+    script:
+    """
+    sed "s/'//g" ${tree} > "${tree.baseName}.dequote.tree"
+    """
+}
+
 process extract_tips_fasta {
     /**
     * Extracts fasta corresponding to tips in the tree
@@ -119,16 +137,88 @@ process extract_tips_fasta {
     path tree
 
     output:
-    path "${fasta.baseName}.tips.fasta", emit: fasta
+    path "${tree.baseName}.tips.fasta", emit: fasta
 
     script:
     """
     fastafunk extract \
         --in-fasta ${fasta} \
         --in-tree ${tree} \
-        --out-fasta "${fasta.baseName}.tips.fasta" \
+        --out-fasta "${tree.baseName}.tips.fasta" \
         --reject-fasta "${fasta.baseName}.new.fasta" \
         --low-memory
+    """
+}
+
+process annotate_metadata {
+    /**
+    * Adds to note column with info about sequences excluded by date
+    * @input metadata
+    * @output metadata
+    */
+
+    input:
+    path metadata
+    path full_fasta
+    path pruned_fasta
+
+    output:
+    path "${metadata.baseName}.annotated.csv"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import csv
+
+    pruned_seqs = set()
+    with open("${pruned_fasta}", 'r', newline = '') as fasta_in:
+        for line in fasta_in:
+            if line.startswith(">"):
+                pruned_seqs.add(line.rstrip()[1:])
+
+    full_seqs = set()
+    with open("${full_fasta}", 'r', newline = '') as fasta_in:
+        for line in fasta_in:
+            if line.startswith(">"):
+                if line.rstrip()[1:] not in pruned_seqs:
+                    full_seqs.add(line.rstrip()[1:])
+
+    print("Full tree had %d tips and pruned tree had %d extra" %(len(full_seqs), len(pruned_seqs)))
+
+    with open("${metadata}", 'r', newline = '') as csv_in, \
+        open("${metadata.baseName}.annotated.csv", 'w', newline = '') as csv_out:
+        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
+        new_fieldnames = reader.fieldnames
+        for column in ["note", "why_excluded", "is_excluded"]:
+            if column not in reader.fieldnames:
+                new_fieldnames.append(column)
+        writer = csv.DictWriter(csv_out, fieldnames = new_fieldnames, delimiter=",", quotechar='\"', quoting=csv.QUOTE_MINIMAL, dialect = "unix")
+        writer.writeheader()
+        for row in reader:
+            for column in ["note", "why_excluded", "is_excluded"]:
+                if column not in row:
+                    row[column] = ""
+
+            if row["sequence_name"] in pruned_seqs:
+                row["is_excluded"] = "N"
+                if row["why_excluded"] != "":
+                    row["note"] += "|" + row["why_excluded"]
+                    row["why_excluded"] = ""
+            elif row["sequence_name"] in full_seqs:
+                row["is_excluded"] = "N"
+                if row["why_excluded"] != "":
+                    row["note"] += "|" + row["why_excluded"]
+                    row["why_excluded"] = "pruned from tree"
+            else:
+                row["is_excluded"] = "Y"
+                if row["why_excluded"] == "":
+                    if "tried to add with usher" in row["note"]:
+                        row["why_excluded"] = "could not place with usher"
+                    elif "sample not recent" in row["note"] or "date_filter" in row and "sample_date older than" in row["date_filter"]:
+                        row["why_excluded"] = "sample not recent"
+                    else:
+                        row["why_excluded"] = row["note"]
+            writer.writerow(row)
     """
 }
 
@@ -297,6 +387,16 @@ process announce_to_webhook {
 
 publish_recipes = file(params.publish_recipes)
 
+workflow dequote_and_extract_tips_fasta {
+    take:
+        fasta
+        newick_tree
+    main:
+        dequote_tree(newick_tree)
+        extract_tips_fasta(fasta, dequote_tree.out)
+    emit:
+        fasta = extract_tips_fasta.out
+}
 
 workflow publish_trees {
     take:
@@ -307,16 +407,18 @@ workflow publish_trees {
         newick_tree
         nexus_tree
     main:
-        publish_master_metadata(metadata,params.category)
         get_unreliable_tips(metadata)
         prune_unreliable_tips(newick_tree,get_unreliable_tips.out).set{ pruned_newick_tree }
         announce_unreliable_pruned_tree(newick_tree, get_unreliable_tips.out, pruned_newick_tree)
         fetch_min_metadata(fasta,metadata)
-        extract_tips_fasta(fetch_min_metadata.out.fasta, pruned_newick_tree)
+        dequote_and_extract_tips_fasta(fetch_min_metadata.out.fasta, pruned_newick_tree).set{ pruned_tips }
+        extract_tips_fasta(fetch_min_metadata.out.fasta, newick_tree).set{ full_tips }
+        annotate_metadata(metadata, full_tips, pruned_tips)
+        publish_master_metadata(annotate_metadata.out,params.category)
         split_recipes(publish_recipes)
         recipe_ch = split_recipes.out.flatten()
         extract_tips_fasta.out.fasta.combine(fetch_min_metadata.out.min_metadata)
-                                    .combine(metadata)
+                                    .combine(annotate_metadata.out)
                                     .combine(mutations)
                                     .combine(constellations)
                                     .combine(newick_tree)
@@ -327,7 +429,7 @@ workflow publish_trees {
         publish_tree_recipes(publish_input_ch)
         outputs_ch = publish_tree_recipes.out.flag.collect()
         announce_to_webhook(outputs_ch, "${params.whoami}")
-        //publish_s3(publish_tree_recipes.out.tree)
+        publish_s3(publish_tree_recipes.out.tree)
     emit:
         published = outputs_ch
 }
