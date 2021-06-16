@@ -10,7 +10,7 @@ def parse_args():
     parser.add_argument('--in-fasta', dest = 'in_fasta', required=True, help='Aligned FASTA')
     parser.add_argument('--in-metadata', dest = 'in_metadata', required=True, help='CSV: if provided hash keeps most recent sequence as representative')
     parser.add_argument('--outgroups', dest = 'outgroups', required=False, help='Lineage splits file containing representative outgroups to protect')
-    parser.add_argument('--protected', dest = 'protected', required=False, help='CSV file of samples to protect')
+    parser.add_argument('--protected', dest = 'protected', required=False, default=None, help='CSV file of samples to protect')
     parser.add_argument('--out-fasta', dest = 'out_fasta', required=True, help='FASTA to write out')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV to write out')
     parser.add_argument('--size', required=False, default=100, help='Number to keep from each lineage')
@@ -133,7 +133,7 @@ def make_test(in_fasta, in_metadata, outgroup_file, protected_file, out_fasta, o
 
 def main():
     args = parse_args()
-    make_test(args.in_fasta, args.in_metadata, args.outgroups, args.out_fasta, args.out_metadata, args.size)
+    make_test(args.in_fasta, args.in_metadata, args.outgroups, args.protected, args.out_fasta, args.out_metadata, args.size)
 
 if __name__ == '__main__':
     main()
