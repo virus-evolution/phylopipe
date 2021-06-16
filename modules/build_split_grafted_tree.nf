@@ -24,7 +24,7 @@ process get_aliases {
             """
         else
             """
-            wget https://raw.githubusercontent.com/cov-lineages/pango-designation/master/alias_key.json
+            wget https://raw.githubusercontent.com/cov-lineages/pango-designation/master/pango_designation/alias_key.json
             """
 }
 
