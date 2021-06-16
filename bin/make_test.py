@@ -10,6 +10,7 @@ def parse_args():
     parser.add_argument('--in-fasta', dest = 'in_fasta', required=True, help='Aligned FASTA')
     parser.add_argument('--in-metadata', dest = 'in_metadata', required=True, help='CSV: if provided hash keeps most recent sequence as representative')
     parser.add_argument('--outgroups', dest = 'outgroups', required=False, help='Lineage splits file containing representative outgroups to protect')
+    parser.add_argument('--protected', dest = 'protected', required=False, help='CSV file of samples to protect')
     parser.add_argument('--out-fasta', dest = 'out_fasta', required=True, help='FASTA to write out')
     parser.add_argument('--out-metadata', dest = 'out_metadata', required=True, help='CSV to write out')
     parser.add_argument('--size', required=False, default=100, help='Number to keep from each lineage')
@@ -35,6 +36,24 @@ def parse_outgroups(outgroup_file):
             line = outgroup_handle.readline()
     return(outgroups)
 
+def parse_protected(protected_file):
+    """
+    input is CSV, last column being the representative outgroups:
+    """
+    protected = set()
+    if not protected_file:
+        return protected
+    with open(protected_file, "r") as protected_handle:
+        line = protected_handle.readline()
+        while line:
+            try:
+                taxon = line.strip().split(",")[0]
+                protected.add(taxon)
+            except:
+                continue
+            line = protected_handle.readline()
+    return(protected)
+
 def get_cog_uk_status(row):
     if "country" in row and row["country"] in ["UK", "United_Kingdom", "United Kingdom"]:
         return "cog_uk"
@@ -52,17 +71,19 @@ def get_split(row, sorted_list_outgroups):
     return None
 
 
-def make_test(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, size):
+def make_test(in_fasta, in_metadata, outgroup_file, protected_file, out_fasta, out_metadata, size):
     outgroups = parse_outgroups(outgroup_file)
     print(outgroups)
     sorted_list_outgroups = [outgroups[k] for k in outgroups]
     print(sorted_list_outgroups)
     sorted_list_outgroups.sort(reverse=True)
     print(sorted_list_outgroups)
+    protected = parse_protected(protected_file)
     records = SeqIO.index(in_fasta, "fasta")
 
     counts = {"cog_uk":{}, "global": {}}
     all_counts = 0
+    protected_counts = 0
     for lineage in sorted_list_outgroups:
         counts["cog_uk"][lineage] = 0
         counts["global"][lineage] = 0
@@ -102,10 +123,13 @@ def make_test(in_fasta, in_metadata, outgroup_file, out_fasta, out_metadata, siz
                 fa_out.write("%s\n" %str(records[fasta_header].seq))
                 counts[status][split] += 1
                 all_counts += 1
+                continue
 
-            #if all_counts > len(outgroups) * size:
-            #    break
-
+            if protected_file and protected_counts < size and fasta_header in protected:
+                writer.writerow(row)
+                fa_out.write(">%s\n" %row["sequence_name"])
+                fa_out.write("%s\n" %str(records[fasta_header].seq))
+                protected_counts += 1
 
 def main():
     args = parse_args()
