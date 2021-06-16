@@ -245,10 +245,11 @@ process annotate_metadata {
         writer.writeheader()
         for row in reader:
             note = []
-            if row["sequence_name"] in tips:
-                note.append("tip in input tree")
             if row["note"]:
-                note.append(row["note"])
+                note.extend(row["note"].split("|"))
+            statement = "tip in input tree"
+            if row["sequence_name"] and statement not in note:
+                note.append(statement)
             row["note"] = "|".join(note)
             writer.writerow(row)
     """

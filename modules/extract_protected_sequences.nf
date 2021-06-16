@@ -77,10 +77,11 @@ process annotate_metadata {
         writer.writeheader()
         for row in reader:
             note = []
-            if row["sequence_name"] not in seqs:
-                note.append("sample not recent")
             if row["note"]:
-                note.append(row["note"])
+                note.extend(row["note"].split("|"))
+            statement = "sample not recent"
+            if row["sequence_name"] not in seqs and statement not in note:
+                note.append("sample not recent")
             row["note"] = "|".join(note)
             writer.writerow(row)
     """

@@ -52,7 +52,10 @@ workflow {
         ch_protobuf = build_protobuf.out.protobuf
     }
 
-    ch_protected = extract_protected_sequences(ch_clean_fasta, ch_clean_metadata)
+    extract_protected_sequences(ch_clean_fasta, ch_clean_metadata)
+    ch_protected = extract_protected_sequences.out.fasta
+    ch_protected_metadata = extract_protected_sequences.out.metadata
+    
     update_protobuf(ch_protected, ch_protobuf, ch_clean_metadata)
     train_usher_pangolin(update_protobuf.out.protobuf)
 }
