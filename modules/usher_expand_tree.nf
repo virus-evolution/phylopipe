@@ -223,12 +223,17 @@ process optimize_start_tree {
     path "${protobuf.baseName}.optimized.pb"
 
     script:
+    if (params.optimize)
     """
     matOptimize -i ${protobuf} \
             -o "${protobuf.baseName}.optimized.pb" \
             -r 100 \
             -T ${params.max_cpus} \
             -s 259200
+    """
+    else
+    """
+    mv ${protobuf} "${protobuf.baseName}.optimized.pb"
     """
 }
 
@@ -729,8 +734,9 @@ workflow update_protobuf {
 
 workflow {
     fasta = file(params.fasta)
+    protobuf = file(params.protobuf)
     newick_tree = file(params.newick_tree)
     metadata = file(params.metadata)
 
-    usher_expand_tree(fasta, newick_tree, metadata)
+    hard_update_usher_tree(fasta, newick_tree, protobuf, metadata)
 }
