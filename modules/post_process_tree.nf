@@ -23,8 +23,18 @@ process annotate_tree_uk {
 
     script:
     """
+    touch in.fa
+
+    fastafunk fetch \
+          --in-metadata ${metadata} \
+          --index-column sequence_name \
+          --filter-column sequence_name country lineage uk_lineage \
+          --out-metadata tmp.out.csv \
+          --in-fasta in.fa \
+          --out-fasta out.fa
+
     clusterfunk annotate_tips \
-        --in-metadata ${metadata} \
+        --in-metadata tmp.out.csv \
         --trait-columns country lineage uk_lineage \
         --index-column sequence_name \
         --boolean-for-trait country='UK' country='UK' \
@@ -236,8 +246,18 @@ process annotate_tree_uk_lineage {
 
     script:
     """
+    touch in.fa
+
+    fastafunk fetch \
+              --in-metadata ${metadata} \
+              --index-column sequence_name \
+              --filter-column sequence_name lineage uk_lineage \
+              --out-metadata tmp.out.csv \
+              --in-fasta in.fa \
+              --out-fasta out.fa
+
     clusterfunk annotate_tips \
-        --in-metadata ${metadata} \
+        --in-metadata tmp.out.csv \
         --trait-columns uk_lineage \
         --index-column sequence_name \
         --input ${tree} \
@@ -397,8 +417,18 @@ process annotate_tree_phylotype {
 
     script:
     """
+    touch in.fa
+
+    fastafunk fetch \
+              --in-metadata ${metadata} \
+              --index-column sequence_name \
+              --filter-column sequence_name phylotype \
+              --out-metadata tmp.out.csv \
+              --in-fasta in.fa \
+              --out-fasta out.fa
+
     clusterfunk annotate_tips \
-        --in-metadata ${metadata} \
+        --in-metadata tmp.out.csv \
         --trait-columns phylotype \
         --index-column sequence_name \
         --input ${tree} \
