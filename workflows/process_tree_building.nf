@@ -80,7 +80,7 @@ workflow {
         hard_update_usher_tree(ch_protected, ch_expanded_tree, ch_protobuf, ch_expanded_metadata)
         ch_full_tree = hard_update_usher_tree.out.tree
         ch_full_metadata = hard_update_usher_tree.out.metadata
-    } else if ( params.protobuf ){
+    } else {
         ch_full_tree = ch_expanded_tree
         ch_full_metadata = ch_expanded_metadata
     }
