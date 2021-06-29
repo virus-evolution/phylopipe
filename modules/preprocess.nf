@@ -248,7 +248,7 @@ process annotate_metadata {
             if row["note"]:
                 note.extend(row["note"].split("|"))
             statement = "tip in input tree"
-            if row["sequence_name"] and statement not in note:
+            if row["sequence_name"] and row["sequence_name"] in tips and statement not in note:
                 note.append(statement)
             row["note"] = "|".join(note)
             writer.writerow(row)
