@@ -133,30 +133,23 @@ process clean_metadata {
 
 process get_keep_tips {
     /**
-    * Pulls out list of tips in metadata
-    * @input metadata
+    * Pulls out list of tips in metadata that match tree
+    * @input metadata, tree
     */
 
     input:
     path metadata
+    path tree
 
     output:
     path "${metadata.baseName}.tips.txt"
 
     script:
     """
-    #!/usr/bin/env python3
-    import csv
-
-    with open("${metadata}", 'r', newline = '') as csv_in, \
-         open("${metadata.baseName}.tips.txt", 'w') as tips_out:
-        reader = csv.DictReader(csv_in, delimiter=",", quotechar='\"', dialect = "unix")
-        if "sequence_name" not in reader.fieldnames:
-            sys.exit("Index column 'sequence_name' not in CSV")
-        for row in reader:
-            tips_out.write("'%s'\\n" %row["sequence_name"].replace('"','').replace("'",""))
-            tips_out.write("%s\\n" %row["sequence_name"].replace('"','').replace("'",""))
-
+    fastafunk get_tips \
+      --in-metadata ${metadata} \
+      --in-tree ${tree} \
+      --out-tips "${metadata.baseName}.tips.txt"
     """
 }
 
@@ -365,7 +358,7 @@ workflow clean_fasta_and_metadata_and_tree {
     main:
         clean_fasta_headers_with_tree(fasta, tree)
         clean_metadata(metadata, clean_fasta_headers_with_tree.out.map)
-        get_keep_tips(clean_metadata.out)
+        get_keep_tips(clean_metadata.out, clean_fasta_headers_with_tree.out.tree)
         prune_tree_with_metadata(clean_fasta_headers_with_tree.out.tree, get_keep_tips.out)
         get_tree_tips(prune_tree_with_metadata.out)
         annotate_metadata(clean_metadata.out, get_tree_tips.out)
