@@ -310,7 +310,7 @@ process publish_tree_recipes {
     */
 
     errorStrategy 'retry'
-    memory = {8.GB * task.attempt}
+    memory = {12.GB * task.attempt}
     maxRetries = 2
     publishDir "${publish_dir}/", pattern: "**/*.*", mode: 'copy', overwrite: true
 
@@ -411,8 +411,11 @@ workflow publish_trees {
         prune_unreliable_tips(newick_tree,get_unreliable_tips.out).set{ pruned_newick_tree }
         announce_unreliable_pruned_tree(newick_tree, get_unreliable_tips.out, pruned_newick_tree)
         fetch_min_metadata(fasta,metadata)
-        dequote_and_extract_tips_fasta(fetch_min_metadata.out.fasta, pruned_newick_tree).set{ pruned_tips }
-        extract_tips_fasta(fetch_min_metadata.out.fasta, newick_tree).set{ full_tips }
+        fetch_min_metadata.out.fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
+        dequote_and_extract_tips_fasta(fasta_chunks, pruned_newick_tree)
+        dequote_and_extract_tips_fasta.out.collectFile(newLine: false).set{ pruned_tips }
+        extract_tips_fasta(fasta_chunks, newick_tree)
+        extract_tips_fasta.out.collectFile(newLine: false).set{ full_tips }
         annotate_metadata(metadata, full_tips, pruned_tips)
         publish_master_metadata(annotate_metadata.out,params.category)
         split_recipes(publish_recipes)
