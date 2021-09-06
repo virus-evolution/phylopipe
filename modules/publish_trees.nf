@@ -420,7 +420,7 @@ workflow publish_trees {
         publish_master_metadata(annotate_metadata.out,params.category)
         split_recipes(publish_recipes)
         recipe_ch = split_recipes.out.flatten()
-        extract_tips_fasta.out.fasta.combine(fetch_min_metadata.out.min_metadata)
+        full_tips.combine(fetch_min_metadata.out.min_metadata)
                                     .combine(annotate_metadata.out)
                                     .combine(mutations)
                                     .combine(constellations)
