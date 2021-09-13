@@ -89,6 +89,7 @@ process filter_on_ambiguous_sites {
         $project_dir/../bin/filter_by_ambiguous_sites.py \
                 --in-alignment ${fasta} \
                 --out-alignment "${fasta.baseName}.site_filtered.fa" \
+                --outgroups ${lineage_splits} \
                 --sites ${ambiguous_sites} > "ids_with_ambiguous_sites.log"
         """
     else
