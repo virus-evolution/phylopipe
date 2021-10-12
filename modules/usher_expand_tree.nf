@@ -318,7 +318,7 @@ process usher_force_update_tree {
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
 
-    memory { 10.GB * task.attempt + vcf_list.size() * 3.B }
+    memory { 11.GB * task.attempt + vcf_list.size() * 3.B }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
     cpus {params.max_cpus}
