@@ -6,6 +6,8 @@
       "anonymize": true,
       "metadata_fields": [
         "sequence_name",
+        "is_uk",
+        "is_cog_uk",
         "sample_date",
         "epi_week",
         "country",
@@ -15,8 +17,7 @@
         "is_pillar_2",
         "lineage",
         "uk_lineage",
-        "primary_uk_lineage",
-        "is_cog_uk"
+        "primary_uk_lineage"
       ],
       "mutations": true,
       "drop_index": "mutations",
@@ -27,6 +28,8 @@
       "tree": "pruned_newick",
       "metadata_fields": [
         "sequence_name",
+        "is_uk",
+        "is_cog_uk",
         "sample_date",
         "epi_week",
         "country",
@@ -50,6 +53,8 @@
       "suffix": "public",
       "metadata_fields": [
         "sequence_name",
+        "is_uk",
+        "is_cog_uk",
         "cog_id",
         "gisaid_id",
         "sample_date",
@@ -73,6 +78,8 @@
       "suffix": "consortium",
       "metadata_fields": [
         "sequence_name",
+        "is_uk",
+        "is_cog_uk",
         "cog_id",
         "gisaid_id",
         "sample_date",
@@ -121,6 +128,8 @@
       "tree": "nexus",
       "metadata_fields": [
         "sequence_name",
+        "is_uk",
+        "is_cog_uk",
         "gisaid_id",
         "sample_date",
         "epi_week",
@@ -158,12 +167,12 @@
     },
     {
       "suffix": "public",
-      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
+      "metadata_fields": ["sequence_name","is_uk","is_cog_uk","central_sample_id","secondary_identifier","sample_date","epi_week","country","adm1","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
       "where": "epi_week=edin_epi_week adm1=adm1_UK"
     },
     {
       "suffix": "public_all",
-      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
+      "metadata_fields": ["sequence_name","is_uk","is_cog_uk","central_sample_id","secondary_identifier","sample_date","epi_week","country","adm1","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype"],
       "where": "epi_week=edin_epi_week adm1=adm1_UK"
     }
   ],
@@ -174,12 +183,12 @@
     },
     {
       "suffix": "private",
-      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","adm2","suggested_adm2_grouping","outer_postcode","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype","why_excluded","is_excluded"],
+      "metadata_fields": ["sequence_name","is_uk","is_cog_uk","central_sample_id","secondary_identifier","sample_date","epi_week","country","adm1","adm2","suggested_adm2_grouping","outer_postcode","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype","why_excluded","is_excluded"],
       "where": "epi_week=edin_epi_week adm1=adm1_UK"
       },
     {
       "suffix": "private_all",
-      "metadata_fields": ["central_sample_id","sequence_name","secondary_identifier","sample_date","epi_week","country","adm1","adm2","suggested_adm2_grouping","outer_postcode","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype","why_excluded","is_excluded"],
+      "metadata_fields": ["sequence_name","is_uk","is_cog_uk","central_sample_id","secondary_identifier","sample_date","epi_week","country","adm1","adm2","suggested_adm2_grouping","outer_postcode","is_surveillance","is_travel_history","travel_history","lineage","uk_lineage","del_lineage","phylotype","why_excluded","is_excluded"],
       "where": "epi_week=edin_epi_week adm1=adm1_UK"
     }
   ]

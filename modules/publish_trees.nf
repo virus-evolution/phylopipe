@@ -310,12 +310,12 @@ process publish_tree_recipes {
     */
 
     errorStrategy 'retry'
-    memory = {task.attempt == 1 ? 4GB : task.attempt * 9.GB}
+    memory = {8.GB * task.attempt}
     maxRetries = 2
     publishDir "${publish_dir}/", pattern: "**/*.*", mode: 'copy', overwrite: true
 
     input:
-    tuple path(fasta),path(min_metadata),path(metadata),path(mutations),path(constellations),path(newick_tree),path(pruned_newick_tree),path(nexus_tree),path(recipe)
+    tuple path(fasta),path(metadata),path(mutations),path(constellations),path(newick_tree),path(pruned_newick_tree),path(nexus_tree),path(recipe)
 
     output:
     path "${recipe.baseName}.done.txt", emit: flag
@@ -326,8 +326,7 @@ process publish_tree_recipes {
     """
     $project_dir/../bin/publish_from_config.py \
       --in-fasta ${fasta} \
-      --min-metadata ${min_metadata} \
-      --full-metadata ${metadata} \
+      --in-metadata ${metadata} \
       --mutations ${mutations} \
       --constellations ${constellations} \
       --newick-tree ${newick_tree} \
@@ -398,6 +397,17 @@ workflow dequote_and_extract_tips_fasta {
         fasta = extract_tips_fasta.out
 }
 
+workflow dequote_and_extract_tips_fasta2 {
+    take:
+        fasta
+        newick_tree
+    main:
+        dequote_and_extract_tips_fasta(fasta, newick_tree)
+    emit:
+        fasta = dequote_and_extract_tips_fasta.out.fasta
+}
+
+
 workflow publish_trees {
     take:
         fasta
@@ -414,21 +424,20 @@ workflow publish_trees {
         fetch_min_metadata.out.fasta.splitFasta( by: params.chunk_size, file: true ).set{ fasta_chunks }
         dequote_and_extract_tips_fasta(fasta_chunks, pruned_newick_tree)
         dequote_and_extract_tips_fasta.out.collectFile(newLine: false).set{ pruned_tips }
-        extract_tips_fasta(fasta_chunks, newick_tree)
-        extract_tips_fasta.out.collectFile(newLine: false).set{ full_tips }
+        dequote_and_extract_tips_fasta2(fasta_chunks, newick_tree)
+        dequote_and_extract_tips_fasta2.out.collectFile(newLine: false).set{ full_tips }
         annotate_metadata(metadata, full_tips, pruned_tips)
         publish_master_metadata(annotate_metadata.out,params.category)
         split_recipes(publish_recipes)
         recipe_ch = split_recipes.out.flatten()
-        full_tips.combine(fetch_min_metadata.out.min_metadata)
-                                    .combine(annotate_metadata.out)
-                                    .combine(mutations)
-                                    .combine(constellations)
-                                    .combine(newick_tree)
-                                    .combine(pruned_newick_tree)
-                                    .combine(nexus_tree)
-                                    .combine(recipe_ch)
-                                    .set{ publish_input_ch }
+        fasta.combine(annotate_metadata.out)
+                 .combine(mutations)
+                 .combine(constellations)
+                 .combine(newick_tree)
+                 .combine(pruned_newick_tree)
+                 .combine(nexus_tree)
+                 .combine(recipe_ch)
+                 .set{ publish_input_ch }
         publish_tree_recipes(publish_input_ch)
         outputs_ch = publish_tree_recipes.out.flag.collect()
         announce_to_webhook(outputs_ch, "${params.whoami}")

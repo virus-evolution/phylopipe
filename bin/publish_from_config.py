@@ -15,8 +15,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="""Create published files from config file""",
                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--in-fasta', dest = 'in_fasta', required=False, help='FASTA')
-    parser.add_argument('--min-metadata', dest = 'min_metadata', required=False, help='Metadata columns for all outputs')
-    parser.add_argument('--full-metadata', dest = 'full_metadata', required=False, help='MASSIVE CSV')
+    parser.add_argument('--in-metadata', dest = 'full_metadata', required=False, help='MASSIVE CSV')
 
     parser.add_argument('--mutations', dest = 'mutations', required=False, help='Mutations CSV')
     parser.add_argument('--constellations', dest = 'constellations', required=False, help='Constellations CSV')
@@ -42,14 +41,14 @@ def parse_args():
 #"anonymize": True or False to anonymize COG sequences e.g. for microreact
 #"seed": int, seed to use for anonymizing
 
-def get_info_from_config(config_dict, outdir, date, in_fasta, min_csv, full_csv, muts_csv, con_csv, tree_dict):
+def get_info_from_config(config_dict, outdir, date, in_fasta, full_csv, muts_csv, con_csv, tree_dict):
     info_dict = {"suffix":None, "metadata_fields":None, "where": None,
                  "mutations":False, "constellations":False,
                  "exclude_uk":False, "uk_only": False, "exclude_cog":False, "cog_only": False,
                  "tree":None, "fasta": None,
                  "anonymize":False, "drop_index": False, "date": date, "data": "cog_global",
-                 "in_fa":in_fasta, "min_csv":min_csv, "full_csv":full_csv, "in_muts":muts_csv, "in_con":con_csv, "in_tree":None,
-                 "out_fa":None, "intermediate_csv":"tmp.csv", "out_csv":"tmp.csv", "out_tree":None}
+                 "in_fa":in_fasta, "full_csv":full_csv, "in_muts":muts_csv, "in_con":con_csv, "in_tree":None,
+                 "out_fa":"tmp.fa", "intermediate_csv":"tmp.csv", "out_csv":"tmp.csv", "out_tree":None}
     info_dict.update(config_dict)
 
     if info_dict["tree"] in tree_dict.keys():
@@ -108,7 +107,7 @@ def publish_file(outdir, info_dict, seed):
         cmd_list = ["cp", info_dict["in_tree"], info_dict["out_tree"]]
         syscall(cmd_list)
 
-    if info_dict["out_fa"] is not None and info_dict["metadata_fields"] is None:
+    if info_dict["out_fa"] is not "tmp.fa" and info_dict["metadata_fields"] is None:
         cmd_list = ["cp", info_dict["in_fa"], info_dict["out_fa"]]
         syscall(cmd_list)
 
@@ -139,27 +138,15 @@ def publish_file(outdir, info_dict, seed):
         syscall(cmd_list)
         info_dict["in_csv"] = "tmp.cog_only.csv"
 
-    if info_dict["out_fa"] is not None:
-        cmd_list = ["fastafunk fetch --in-fasta", info_dict["in_fa"], "--in-metadata", info_dict["full_csv"],
-                  "--index-column sequence_name --out-fasta", info_dict["out_fa"],
-                  "--out-metadata", info_dict["intermediate_csv"], "--restrict --low-memory --keep-omit-rows"]
-        if info_dict["metadata_fields"]:
-                cmd_list.append("--filter-column")
-                cmd_list.extend(info_dict["metadata_fields"])
-        if info_dict["where"]:
-            cmd_list.append("--where-column %s" %info_dict["where"])
-        syscall(cmd_list)
-    else:
-        cmd_list = ["fastafunk add_columns --in-metadata", info_dict["min_csv"],
-            "--in-data", info_dict["full_csv"], "--index-column sequence_name",
-            "--join-on sequence_name --force-overwrite --out-metadata", info_dict["intermediate_csv"]]
-        syscall(cmd_list)
-        if info_dict["metadata_fields"]:
-                cmd_list.append("--new-columns")
-                cmd_list.extend(info_dict["metadata_fields"])
-        if info_dict["where"]:
-            cmd_list.append("--where-column %s" %info_dict["where"])
-        syscall(cmd_list)
+    cmd_list = ["fastafunk fetch --in-fasta", info_dict["in_fa"], "--in-metadata", info_dict["full_csv"],
+                "--index-column sequence_name --out-fasta", info_dict["out_fa"],
+                "--out-metadata", info_dict["intermediate_csv"], "--low-memory --keep-omit-rows"]
+    if info_dict["metadata_fields"]:
+        cmd_list.append("--filter-column")
+        cmd_list.extend(info_dict["metadata_fields"])
+    if info_dict["where"]:
+        cmd_list.append("--where-column %s" %info_dict["where"])
+    syscall(cmd_list)
 
     if info_dict["mutations"]:
             cmd_list = ["fastafunk add_columns --in-metadata", info_dict["intermediate_csv"],
@@ -214,7 +201,7 @@ def main():
     for outdir in recipes.keys():
         os.makedirs(outdir,exist_ok=True)
         for recipe in recipes[outdir]:
-            info_dict = get_info_from_config(recipe, outdir, args.date, args.in_fasta, args.min_metadata, args.full_metadata, args.mutations, args.constellations, tree_dict)
+            info_dict = get_info_from_config(recipe, outdir, args.date, args.in_fasta, args.full_metadata, args.mutations, args.constellations, tree_dict)
             publish_file(outdir, info_dict, args.seed)
 
 if __name__ == '__main__':
