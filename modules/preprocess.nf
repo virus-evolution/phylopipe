@@ -25,7 +25,7 @@ process mask_alignment {
     $project_dir/../bin/add_mask.py \
       --in-alignment ${alignment} \
       --out-alignment "${alignment.baseName}.masked.fa" \
-      --mask ${mask_file} \
+      --mask ${mask_file}
     """
 }
 
@@ -53,6 +53,12 @@ process filter_uk {
             --out-fasta "${fasta.baseName}.filtered.fasta" \
             --out-metadata "${metadata.baseName}.filtered.csv" \
             --exclude_true duplicate
+    if [[ \$(cat "${metadata}" | wc -l) != \$(cat "${metadata.baseName}.filtered.csv" | wc -l) ]]
+            then
+                echo \$(cat "${metadata}" | wc -l)
+                echo \$(cat "${metadata.baseName}.filtered.csv" | wc -l)
+                exit 1
+            fi
     """
 }
 
@@ -127,6 +133,12 @@ process clean_metadata {
           --in-map "${map}" \
           --to-clean ${params.annotations} \
           --out-metadata "${metadata.baseName}.clean.csv"
+    if [[ \$(cat "${metadata}" | wc -l) != \$(cat "${metadata.baseName}.clean.csv" | wc -l) ]]
+    then
+        echo \$(cat "${metadata}" | wc -l)
+        echo \$(cat "${metadata.baseName}.clean.csv" | wc -l)
+        exit 1
+    fi
     """
 }
 
