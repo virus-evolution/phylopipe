@@ -7,9 +7,11 @@ import argparse
 import csv
 import re
 
+MAX_NUM = 99999999
+
 def get_random_name():
-    r = random.randint(0, 999999)
-    num_str = "{:06d}".format(r)
+    r = random.randint(0, MAX_NUM)
+    num_str = "{:08d}".format(r)
     anonymous_name = 'COG' + str(num_str)
     return(anonymous_name)
 
@@ -57,6 +59,10 @@ def anonymize_microreact(metadata_in, tree_in, metadata_out, tree_out, seed):
                 anonymous_names[row['sequence_name']] = anonymous_name
                 row['sequence_name'] = anonymous_name
                 selected_names.add(anonymous_name)
+                if len(selected_names) == MAX_NUM:
+                    sys.exit('Please increase the digits available to anonymous names')
+
+
             writer.writerow(row)
         del selected_names
 
