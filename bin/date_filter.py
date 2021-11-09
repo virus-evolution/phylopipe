@@ -50,12 +50,15 @@ def filter_by_date(in_metadata, out_metadata, todays_date, time_window, filter_c
                 continue
 
             try:
-                date = datetime.datetime.strptime(row["sample_date"], '%Y-%m-%d').date()
+                date = datetime.datetime.strptime(row["published_date"], '%Y-%m-%d').date()
             except:
-                row["why_excluded"] = "no sample_date"
-                if not restrict:
-                    writer.writerow(row)
-                continue
+                try:
+                    date = datetime.datetime.strptime(row["sample_date"], '%Y-%m-%d').date()
+                except:
+                    row["why_excluded"] = "no sample_date"
+                    if not restrict:
+                        writer.writerow(row)
+                    continue
 
             if (todays_date - window) > date:
                 row[filter_column] = "sample_date older than %s days" %time_window
