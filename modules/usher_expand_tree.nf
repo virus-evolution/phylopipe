@@ -24,6 +24,27 @@ process dequote_tree {
     """
 }
 
+process filter_blacklist {
+    /**
+    * removes sequences listed in blacklist
+    * @input fasta
+    */
+
+    input:
+    path fasta
+
+    output:
+    path "${fasta.baseName}.blacklist_excluded.fa"
+
+    script:
+    """
+    fastafunk remove \
+      --in-fasta ${fasta} \
+      --in-metadata ${blacklist} \
+      --out-fasta "${fasta.baseName}.blacklist_excluded.fa"
+    """
+}
+
 process remove_reference {
     /**
     * Removes reference sequences from fasta
@@ -576,6 +597,7 @@ process announce_protobuf_complete {
 reference = file(params.reference_fasta)
 lineage_splits = file(params.lineage_splits)
 mask_file = file(params.mask_vcf)
+blacklist = file(params.blacklist)
 
 
 workflow prepare_fasta {
@@ -643,7 +665,8 @@ workflow usher_expand_tree {
         metadata
     main:
         dequote_tree(newick_tree)
-        extract_tips_fasta(fasta, dequote_tree.out)
+        filter_blacklist(fasta)
+        extract_tips_fasta(filter_blacklist.out, dequote_tree.out)
         prepare_fasta(extract_tips_fasta.out.fasta)
         usher_start_tree(prepare_fasta.out,dequote_tree.out)
         if ( params.update_protobuf ){
@@ -675,7 +698,8 @@ workflow soft_update_usher_tree {
         metadata
     main:
         dequote_tree(newick_tree)
-        extract_tips_fasta(fasta, dequote_tree.out)
+        filter_blacklist(fasta)
+        extract_tips_fasta(filter_blacklist.out, dequote_tree.out)
         iteratively_update_tree(extract_tips_fasta.out.to_add,protobuf,metadata)
         root_tree(iteratively_update_tree.out.tree)
         rescale_branch_lengths(root_tree.out)
@@ -694,7 +718,8 @@ workflow hard_update_usher_tree {
         metadata
     main:
         dequote_tree(newick_tree)
-        extract_tips_fasta(fasta, dequote_tree.out)
+        filter_blacklist(fasta)
+        extract_tips_fasta(filter_blacklist.out, dequote_tree.out)
         iteratively_force_update_tree(extract_tips_fasta.out.to_add, protobuf,metadata)
         root_tree(iteratively_force_update_tree.out.tree)
         rescale_branch_lengths(root_tree.out)
