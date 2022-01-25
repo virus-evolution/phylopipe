@@ -339,7 +339,7 @@ process usher_force_update_tree {
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
 
-    memory { 11.GB * task.attempt + vcf_list.size() * 3.B }
+    memory { 80.GB + 20.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
     cpus {params.max_cpus}
@@ -387,6 +387,8 @@ process prune_tree_of_long_branches {
 
     publishDir "${publish_dev}/trees", pattern: "*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     publishDir "${publish_dev}/trees", pattern: "*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
+
+    memory { 4.GB + 4.GB * task.attempt }
 
     input:
     path protobuf
@@ -486,6 +488,8 @@ process root_tree {
     * Roots tree with WH04
     * @input tree
     */
+
+    label 'retry_increasing_mem'
 
     input:
     path tree

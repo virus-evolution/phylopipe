@@ -149,6 +149,10 @@ process get_keep_tips {
     * @input metadata, tree
     */
 
+    memory { 4.GB + 4.GB * task.attempt }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries = 2
+
     input:
     path metadata
     path tree
@@ -170,6 +174,8 @@ process prune_tree_with_metadata {
     * Removes tips of tree with no matching metadata
     * @input metadata, tree
     */
+
+    label 'retry_increasing_mem'
 
     input:
     path tree
@@ -198,6 +204,7 @@ process get_tree_tips {
     * Gets list of tree tips
     * @input tree
     */
+    label 'retry_increasing_mem'
 
     input:
     path tree
