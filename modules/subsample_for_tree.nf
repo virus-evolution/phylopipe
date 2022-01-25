@@ -95,6 +95,7 @@ process filter_on_ambiguous_sites {
     else
         """
         mv "${fasta}" "${fasta.baseName}.site_filtered.fa"
+        touch "ids_with_ambiguous_sites.log"
         """
 }
 

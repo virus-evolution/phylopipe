@@ -2,6 +2,9 @@
 
 nextflow.enable.dsl = 2
 
+include { filter_blacklist } from '../modules/usher_expand_tree.nf'
+include { get_aliases } from '../modules/build_split_grafted_tree.nf'
+
 project_dir = projectDir
 publish_dev = file(params.publish_dev)
 
@@ -59,6 +62,35 @@ process filter_uk {
                 echo \$(cat "${metadata.baseName}.filtered.csv" | wc -l)
                 exit 1
             fi
+    """
+}
+
+
+process get_lineage_fasta {
+    /**
+    * Splits input fasta for subtrees
+    * @input fasta, metadata
+    */
+    label 'retry_increasing_mem'
+
+    input:
+    path fasta
+    path metadata
+    path aliases
+
+    output:
+    path "${params.lineage}.fasta", emit: fasta
+
+    script:
+    """
+    fastafunk split \
+        --in-fasta ${fasta} \
+        --in-metadata ${metadata} \
+        --index-column sequence_name \
+        --index-field lineage \
+        --lineage A ${params.lineage} \
+        --aliases ${aliases}
+    cat ${reference} >> "${params.lineage}.fasta"
     """
 }
 
@@ -334,6 +366,7 @@ process announce_metadata_pruned_tree {
 
 lineage_splits = file(params.lineage_splits)
 mask_file = file(params.mask)
+reference = file(params.reference_fasta)
 
 workflow mask_and_filter {
     take:
@@ -348,6 +381,20 @@ workflow mask_and_filter {
         metadata = filter_uk.out.metadata
 }
 
+
+workflow extract_lineage {
+    take:
+        fasta
+        metadata
+    main:
+        if (params.lineage_aliases)
+            lineage_aliases = file(params.lineage_aliases)
+        get_aliases()
+        filter_blacklist(fasta)
+        get_lineage_fasta(filter_blacklist.out,metadata,get_aliases.out)
+    emit:
+        fasta = get_lineage_fasta.out.fasta
+}
 
 workflow clean_fasta_and_metadata {
     take:

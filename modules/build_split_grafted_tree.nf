@@ -269,6 +269,36 @@ process announce_tree_complete {
 lineage_splits = file(params.lineage_splits)
 guide_tree = file(params.guide_tree)
 
+workflow build_tree {
+    take:
+        fasta
+        metadata
+        hashmap
+    main:
+        check_tree_building_size(fasta)
+        check_tree_building_size.out.flatMap { f -> f }.map { f -> [params.lineage,f] }.set{ fasta_ch }
+        Channel.from("Wuhan/WH04/2020").map { f -> [params.lineage,f] }.set{ outgroup_ch }
+
+        if ( params.tree_builder == "fasttree" ) {
+            fasttree(fasta_ch)
+            fasttree.out.join(outgroup_ch).set{ unrooted_tree_ch }
+            label_ch = Channel.from("FT")
+        } else if ( params.tree_builder == "veryfasttree" ) {
+            veryfasttree(fasta_ch)
+            veryfasttree.out.join(outgroup_ch).set{ unrooted_tree_ch }
+            label_ch = Channel.from("VFT")
+        } else {
+            println "Parameter tree_builder must be either fasttree or veryfasttree, not '${params.tree_builder}'"
+            exit 1
+        }
+
+        root_tree(unrooted_tree_ch)
+        expand_hashmap(root_tree.out.trees, hashmap)
+        announce_tree_complete(expand_hashmap.out)
+    emit:
+        tree = expand_hashmap.out
+}
+
 workflow build_split_grafted_tree {
     take:
         fasta
@@ -338,6 +368,8 @@ workflow {
 
     if (params.tree_dir) {
         finish_split_grafted_tree(fasta,metadata,hashmap)
+    } else if ( params.lineage ) {
+        build_tree(fasta, metadata, hashmap)
     } else {
         build_split_grafted_tree(fasta,metadata,hashmap)
     }
