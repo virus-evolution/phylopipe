@@ -339,7 +339,7 @@ process usher_force_update_tree {
     publishDir "${publish_dev}/trees", pattern: "trees/*.pb", mode: 'copy', saveAs: { "cog_global.${params.date}.pb" }, overwrite: true
     publishDir "${publish_dev}/trees", pattern: "trees/*.tree", mode: 'copy', saveAs: { "cog_global.${params.date}.tree" }, overwrite: true
 
-    memory { 80.GB + 20.GB * task.attempt }
+    memory { 8.GB + 2.GB * task.attempt }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
     maxRetries 2
     cpus {params.max_cpus}
@@ -662,6 +662,44 @@ workflow iteratively_force_update_tree {
 }
 
 
+workflow complete_failed_iteratively_update_tree {
+    take:
+        fasta
+        protobuf
+        metadata
+        usher_log
+    main:
+        annotate_metadata(metadata, fasta)
+        add_usher_metadata(usher_log,annotate_metadata.out)
+        prune_tree_of_long_branches(protobuf)
+
+        final_tree = prune_tree_of_long_branches.out.tree
+        final_protobuf = prune_tree_of_long_branches.out.protobuf
+    emit:
+        protobuf = final_protobuf
+        metadata = add_usher_metadata.out
+}
+
+workflow resume_iteratively_update_tree {
+    take:
+        vcfs
+        protobuf
+        metadata
+    main:
+        vcfs.collect().set{ vcf_list }
+        usher_force_update_tree(vcf_list, protobuf)
+        add_usher_metadata(usher_force_update_tree.out.usher_log.last(),metadata)
+        prune_tree_of_long_branches(usher_force_update_tree.out.protobuf.last())
+
+        final_tree = prune_tree_of_long_branches.out.tree
+        final_protobuf = prune_tree_of_long_branches.out.protobuf
+    emit:
+        tree = final_tree
+        protobuf = final_protobuf
+        metadata = add_usher_metadata.out
+}
+
+
 workflow usher_expand_tree {
     take:
         fasta
@@ -712,6 +750,26 @@ workflow soft_update_usher_tree {
         tree = rescale_branch_lengths.out
         protobuf = iteratively_update_tree.out.protobuf
         metadata = iteratively_update_tree.out.metadata
+}
+
+workflow resume_hard_update_usher_tree {
+    take:
+        fasta
+        protobuf
+        metadata
+        vcfs
+        usher_log
+    main:
+        vcfs.collect().set{ vcf_list }
+        complete_failed_iteratively_update_tree(fasta, protobuf, metadata, usher_log)
+        resume_iteratively_update_tree(vcf_list, complete_failed_iteratively_update_tree.out.protobuf, complete_failed_iteratively_update_tree.out.metadata)
+        root_tree(resume_iteratively_update_tree.out.tree)
+        rescale_branch_lengths(root_tree.out)
+        announce_tree_complete(rescale_branch_lengths.out, "soft")
+    emit:
+        tree = rescale_branch_lengths.out
+        protobuf = resume_iteratively_update_tree.out.protobuf
+        metadata = resume_iteratively_update_tree.out.metadata
 }
 
 workflow hard_update_usher_tree {
