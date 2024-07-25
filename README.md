@@ -4,6 +4,12 @@ Pipeline to create phylogenetic trees for UK and global SARS-CoV-2 sequences and
 
 Builds trees weekly, with daily updates.
 
+### Install dependancies
+	git clone --recurse-submodules https://github.com/virus-evolution/phylopipe.git
+	cd phylopipe
+	conda env create -f environment.yml
+	conda activate phylopipe
+ 
 ### Pipeline Overview
 
 #### Preprocessing
